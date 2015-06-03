@@ -2,14 +2,9 @@
 Python Perforce
 ===============================
 
-.. image:: https://badge.fury.io/py/python-perforce.png
-    :target: http://badge.fury.io/py/python-perforce
-
 .. image:: https://travis-ci.org/theiviaxx/python-perforce.png?branch=master
         :target: https://travis-ci.org/theiviaxx/python-perforce
 
-.. image:: https://pypip.in/d/python-perforce/badge.png
-        :target: https://pypi.python.org/pypi/python-perforce
 
 
 Pure python perforce API
@@ -20,5 +15,5 @@ Pure python perforce API
 Features
 --------
 
-* Revision (File)
-* Changelist
+* Pythonic api to Perforce
+* Pure python, no compiled extension
