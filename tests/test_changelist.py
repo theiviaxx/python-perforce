@@ -25,7 +25,7 @@ TO_ADD = path.path(r"C:\work\p4_test\p4_test\toadd.txt")
 
 class ChangelistTests(unittest.TestCase):
     def setUp(self):
-        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test')
+        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon')
 
     def test_changelist(self):
         cl = self._conn.findChangelist(40)
@@ -63,6 +63,7 @@ class ChangelistTests(unittest.TestCase):
         cl.query()
         self.assertEqual(len(cl), 1)
         cl.revert()
+        self.assertEqual(len(cl), 0)
 
         del cl
 
@@ -75,19 +76,6 @@ class ChangelistTests(unittest.TestCase):
                 fh.write(s)
         
         cl.submit()
-
-        # cl.revert()
-
-        # self.assertEqual(cl.description, 'DO NOT COMMIIT\n')
-        # self.assertEqual(len(cl), 25)
-
-        # cl.append('//depot/u1/main/content/levels/door.mb')
-        # cl.description = 'xxx'
-        # cl.save()
-
-        # cl = self._conn.findChangelist(11)
-        # self.assertEqual(len(cl), 26)
-        # self.assertEqual(cl.description, 'xxx')
 
 
 

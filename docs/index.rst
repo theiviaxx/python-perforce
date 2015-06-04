@@ -4,16 +4,17 @@
    contain the root `toctree` directive.
 
 Welcome to Python Perforce's documentation!
-======================================
+===========================================
 
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    readme
    installation
    usage
+   api
    contributing
    authors
    history

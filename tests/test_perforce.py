@@ -29,7 +29,7 @@ NOT_ADDED = path.path('//p4_test/not_added.txt')
 
 class MarshalTests(unittest.TestCase):
     def setUp(self):
-        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test')
+        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon')
 
     def test_fstat(self):
         self.assertEqual(1, len(self._conn.ls(FILE)))
@@ -41,7 +41,7 @@ class MarshalTests(unittest.TestCase):
 
 class RevisionTests(unittest.TestCase):
     def setUp(self):
-        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test')
+        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon')
 
     def test_properties(self):
         r = self._conn.ls(FILE)[0]
@@ -61,7 +61,7 @@ class RevisionTests(unittest.TestCase):
 
         r = self._conn.ls(TO_EDIT)[0]
         self.assertEqual('edit', r.action)
-        self.assertEqual(40, r.change.change)
+        self.assertEqual(40, r.changelist.change)
         self.assertEqual(None, r.description)
         self.assertEqual('text', r.type)
         self.assertEqual('D41D8CD98F00B204E9800998ECF8427E', r.hash)

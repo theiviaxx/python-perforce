@@ -3,6 +3,7 @@ import datetime
 
 
 class HeadRevision(object):
+    """The HeadRevision represents the latest version on the Perforce server"""
     def __init__(self, filedict):
         self._p4dict = filedict
 

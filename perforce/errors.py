@@ -5,16 +5,20 @@ class Error(Exception):
 
 
 class CommandError(Exception):
-    pass
+    """Errors that occur while running a command"""
 
 
 class ChangelistError(Exception):
-    pass
+    """Errors that occur in a Changelist"""
 
 
 class ShelveError(Exception):
-    pass
+    """Errors that occur when shelving/unshelving a file revision"""
 
 
 class RevisionError(Exception):
-    pass
+    """Errors that occur on a file revision"""
+
+
+class ConnectionError(Exception):
+    """Errors that occured with the connection"""
