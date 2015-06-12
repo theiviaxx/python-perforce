@@ -11,7 +11,6 @@ Tests for `python-perforce` module.
 import unittest
 import datetime
 import sys
-print(sys.path)
 
 import path
 

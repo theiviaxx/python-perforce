@@ -30,7 +30,7 @@ class Revision(object):
     def __int__(self):
         return self.revision
 
-    def __query(self):
+    def query(self):
         """Runs an fstat for this file and repopulates the data"""
         
         self._p4dict = self._connection.run('fstat -m 1 %s' % self._p4dict['depotFile'])[0]
@@ -49,7 +49,7 @@ class Revision(object):
         else:
             self._connection.run('edit %s' % self.depotFile)
 
-        self.__query()
+        self.query()
 
     def lock(self, lock=True, changelist=0):
         """Locks or unlocks the file
@@ -66,7 +66,7 @@ class Revision(object):
         else:
             self._connection.run('%s %s' % (cmd, self.depotFile))
 
-        self.__query()
+        self.query()
 
     def sync(self, force=False, safe=True, revision=0):
         """Syncs the file at the current revision
@@ -90,7 +90,7 @@ class Revision(object):
             args += '#%i' % revision
         self._connection.run('sync %s' % args)
 
-        self.__query()
+        self.query()
 
     def revert(self, unchanged=False):
         """Reverts any file changes
@@ -108,7 +108,7 @@ class Revision(object):
         self._connection.run('revert %s' % args)
 
         if not wasadd:
-            self.__query()
+            self.query()
 
         if self._changelist:
             self._changelist.remove(self, permanent=True)
@@ -126,7 +126,7 @@ class Revision(object):
 
         self._connection.run(cmd)
 
-        self.__query()
+        self.query()
 
     def move(self, dest, changelist=0, force=False):
         """Renames/moves the file to dest"""
@@ -140,7 +140,7 @@ class Revision(object):
         args += ' %s %s' % (self.depotFile, dest)
         self._connection.run('move %s' % args)
 
-        self.__query()
+        self.query()
 
     def delete(self, changelist=0):
         """Marks the file for delete"""
@@ -152,7 +152,7 @@ class Revision(object):
         args += ' %s' % self.depotFile
         self._connection.run('delete %s' % args)
 
-        self.__query()
+        self.query()
 
     @property
     def hash(self):

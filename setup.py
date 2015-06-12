@@ -12,17 +12,17 @@ readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
-    # TODO: put package requirements here
+    'path.py==5.2'
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
+    'path.py==5.2'
 ]
 
 setup(
     name='python-perforce',
     version='0.1.0',
-    description='Pure python perforce API',
+    description='Pure python Perforce API',
     long_description=readme + '\n\n' + history,
     author='Brett Dixon',
     author_email='theiviaxx@gmail.com',
@@ -42,8 +42,6 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
