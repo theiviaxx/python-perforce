@@ -32,6 +32,9 @@ class Connection(object):
         self._level = level
         self._default = changelist.Default(self)
 
+    def __repr__(self):
+        return '<Connection: {0}, {1}, {2}>'.format(self._port, self._client, self._user)
+
     @property
     def client(self):
         return self._client
@@ -166,6 +169,8 @@ class Connection(object):
         :param filename: File path to add
         :type filename: str
         """
+        result = self.run('add -n {}'.format(filename))[0]
+        return result.get('code') not in ('error', 'info')
 
 
 

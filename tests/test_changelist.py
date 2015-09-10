@@ -36,6 +36,7 @@ class ChangelistTests(unittest.TestCase):
         self.assertEqual('pending', cl.status)
         self.assertEqual('brett', cl.user)
         self.assertEqual(datetime.datetime(2015, 9, 7, 14, 21, 32), cl.time)
+        self.assertEqual(str(cl), '<Changelist 2>')
 
         default = self._conn.findChangelist()
 

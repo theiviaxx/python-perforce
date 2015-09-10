@@ -142,8 +142,10 @@ def test_not_added():
     rev = c.ls(NOT_ADDED)
     assert len(rev) == 0
 
-    assert c.canAdd(NOT_ADDED) == True
-    assert c.canAdd('foo.txt') == False
+    res = c.canAdd(NOT_ADDED)
+    assert res == True
+    res = c.canAdd('foo.txt')
+    assert res == False
 
 
 if __name__ == '__main__':

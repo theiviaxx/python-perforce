@@ -71,6 +71,9 @@ class Changelist(object):
                 if k.startswith('depotFile'):
                     self.append(v)
 
+    def __repr__(self):
+        return '<Changelist {}>'.format(self._change)
+
     def __int__(self):
         return int(self._change)
 
