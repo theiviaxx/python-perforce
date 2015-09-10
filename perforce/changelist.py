@@ -127,7 +127,10 @@ class Changelist(object):
         :type rev: :py:class:Revision
         """
         if not isinstance(rev, revision.Revision):
-            rev = self._connection.ls(rev)[0]
+            rev = self._connection.ls(rev)
+            if not rev:
+                return
+            rev = rev[0]
 
         if not rev in self:
             if not rev.isMapped and rev.action != 'add':
@@ -187,7 +190,8 @@ class Changelist(object):
             description=self._description,
             files='\n'.join(['    {0}'.format(f.depotFile) for f in self._files])
         )
-        self._connection.run('change -i', form, marshal_output=False)
+        print(form)
+        self._connection.run('change -i', stdin=form, marshal_output=False)
         self._dirty = False
 
     def submit(self):

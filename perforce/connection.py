@@ -61,7 +61,15 @@ class Connection(object):
             command.append('-G')
         command += cmd.split()
 
-        proc = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=4096)
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+        proc = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            startupinfo=startupinfo)
 
         if stdin:
             proc.stdin.write(stdin)
@@ -96,9 +104,9 @@ class Connection(object):
         if not isinstance(files, (tuple, list)):
             files = [files]
 
-        results = self.run('fstat {0}'.format(' '.join(files)))
-
-        return [revision.Revision(r, self) for r in results]
+        results = self.run('fstat {}'.format(' '.join(files)))
+        
+        return [revision.Revision(r, self) for r in results if r.get('code') != 'error']
 
     def findChangelist(self, description=None):
         """Gets or creates a Changelist object with a description
@@ -152,10 +160,18 @@ class Connection(object):
 
         return rev
 
+    def canAdd(self, filename):
+        """Determines if a filename can be added to the depot under the current client
 
-def connect():
+        :param filename: File path to add
+        :type filename: str
+        """
+
+
+
+def connect(*args, **kwargs):
     global __CONNECTION
     if __CONNECTION is None:
-        __CONNECTION = Connection()
+        __CONNECTION = Connection(*args, **kwargs)
 
     return __CONNECTION

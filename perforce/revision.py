@@ -1,10 +1,13 @@
 """Perforce Revision Object"""
 
+import logging
+
 import path
 
 from perforce import errors
 from perforce import headrevision
 
+LOGGER = logging.getLogger(__name__)
 
 
 class Revision(object):
@@ -87,7 +90,7 @@ class Revision(object):
 
         args += ' %s' % self.depotFile
         if revision:
-            args += '#%i' % revision
+            args += '#{}'.format(revision)
         self._connection.run('sync %s' % args)
 
         self.query()
@@ -132,13 +135,17 @@ class Revision(object):
         """Renames/moves the file to dest"""
         args = ''
         if force:
-            args += ' -f'
+            args += '-f'
 
         if changelist:
-            args += ' -c %i' % changelist
+            args += ' -c {} '.format(changelist)
 
-        args += ' %s %s' % (self.depotFile, dest)
-        self._connection.run('move %s' % args)
+        if not self.isEdit:
+            self.edit(changelist)
+
+        args += '{0} {1}'.format(self.depotFile, dest)
+        LOGGER.info('move {}'.format(args))
+        self._connection.run('move {}'.format(args))
 
         self.query()
 
@@ -231,11 +238,6 @@ class Revision(object):
             return self._p4dict['type']
 
         return None
-    
-    @property
-    def characterSet(self):
-        """The files character set"""
-        return self._p4dict['charSet']
 
     @property
     def isResolved(self):
@@ -276,4 +278,10 @@ class Revision(object):
     def isSynced(self):
         """Is the local file the latest revision"""
         return self.revision == self.head.revision
+
+    @property
+    def isEdit(self):
+        return self.action == 'edit'
+    
+    
 
