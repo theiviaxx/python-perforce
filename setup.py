@@ -21,7 +21,7 @@ test_requirements = [
 
 setup(
     name='python-perforce',
-    version='0.2.1',
+    version='0.2.3',
     description='Pure python Perforce API',
     long_description=readme + '\n\n' + history,
     author='Brett Dixon',
