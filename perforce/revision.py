@@ -7,7 +7,7 @@ import path
 from perforce import errors
 from perforce import headrevision
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger('Perforce')
 
 
 class Revision(object):
@@ -20,7 +20,7 @@ class Revision(object):
 
     def __len__(self):
         if 'fileSize' not in self._p4dict:
-            self._p4dict = self._connection.run('fstat -m 1 -Ol %s' % self.depotFile[0])[0]
+            self._p4dict = self._connection.run('fstat -m 1 -Ol %s' % self.depotFile)[0]
         
         return int(self._p4dict['fileSize'])
 
@@ -45,12 +45,13 @@ class Revision(object):
         """Checks out the file
 
         :param changelist: Optional changelist to checkout the file into
-        :type changelist: Changelist
+        :type changelist: :class:`.Changelist`
         """
+        command = 'reopen' if self.action in ('add', 'edit') else 'edit'
         if changelist:
-            self._connection.run('edit -c %i %s' % (int(changelist), self.depotFile))
+            self._connection.run('{0} -c {1} {2}'.format(command, int(changelist), self.depotFile))
         else:
-            self._connection.run('edit %s' % self.depotFile)
+            self._connection.run('{0} {1}'.format(command, self.depotFile))
 
         self.query()
 
@@ -60,7 +61,7 @@ class Revision(object):
         :param lock: Lock or unlock the file
         :type lock: bool
         :param changelist: Optional changelist to checkout the file into
-        :type changelist: Changelist
+        :type changelist: :class:`.Changelist`
         """
 
         cmd = 'lock' if lock else 'unlock'
@@ -186,7 +187,7 @@ class Revision(object):
 
     @property
     def isMapped(self):
-        """Is the fiel mapped to the current workspace"""
+        """Is the file mapped to the current workspace"""
         return 'isMapped' in self._p4dict
 
     @property
@@ -213,7 +214,7 @@ class Revision(object):
 
     @property
     def changelist(self):
-        """Which changelist is this revision in"""
+        """Which :class:`.Changelist` is this revision in"""
         import changelist
         if self._changelist:
             return self._changelist
@@ -271,7 +272,7 @@ class Revision(object):
     
     @property
     def head(self):
-        """The :py:class:HeadRevision of this file"""
+        """The :class:`.HeadRevision` of this file"""
         return self._head
 
     @property
@@ -281,6 +282,7 @@ class Revision(object):
 
     @property
     def isEdit(self):
+        """Is the file open for edit"""
         return self.action == 'edit'
     
     

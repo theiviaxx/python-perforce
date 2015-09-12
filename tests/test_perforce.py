@@ -61,6 +61,7 @@ def test_global_connection():
     c1 = connection.connect(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon')
     c2 = connection.connect(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon')
     assert c1 is c2
+    assert str(c1) == '<Connection: 127.0.0.1:1666, p4_unit_test, bdixon>'
 
 def test_connection_properties():
     c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon', level=2)
@@ -91,6 +92,7 @@ class RevisionTests(unittest.TestCase):
         self.assertEqual(0, r.resolved)
         self.assertTrue(r.isResolved)
         self.assertTrue(r.isSynced)
+        self.assertEqual(len(r), 11)
 
         r = self._conn.ls(TO_EDIT)[0]
         self.assertEqual('edit', r.action)

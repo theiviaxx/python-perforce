@@ -64,15 +64,18 @@ class Connection(object):
             command.append('-G')
         command += cmd.split()
 
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo = None
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
         proc = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            startupinfo=startupinfo)
+            startupinfo=startupinfo
+        )
 
         if stdin:
             proc.stdin.write(stdin)
@@ -147,6 +150,9 @@ class Connection(object):
         :returns: Revision
         """
         try:
+            if not self.canAdd(filename):
+                return            
+
             if change is not None:
                 self.run('add -c %i %s' % (int(change), filename))
             else:

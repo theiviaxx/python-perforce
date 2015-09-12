@@ -1,12 +1,16 @@
 """Perforce Changelist Object"""
 
+import logging
 import subprocess
 import datetime
+import traceback
 
 from perforce import revision
 from perforce import errors
 
 
+LOGGER = logging.getLogger('Perforce')
+LOGGER.setLevel(logging.DEBUG)
 FORMAT = """Change: {change}
 
 Client: {client}
@@ -77,12 +81,16 @@ class Changelist(object):
     def __int__(self):
         return int(self._change)
 
+    def __nonzero__(self):
+        return True
+
     def __enter__(self):
         return self
 
-    def __exit__(self, exctype, excvalue, traceback):
-        if exctype:
-            raise errors.ChangelistError(excvalue)
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        if exc_type:
+            LOGGER.debug(traceback.format_exc())
+            raise errors.ChangelistError(exc_value)
 
         self.save()
 
@@ -127,19 +135,21 @@ class Changelist(object):
         """Adds a :py:class:Revision to this changelist and adds or checks it out if needed
 
         :param rev: Revision to add
-        :type rev: :py:class:Revision
+        :type rev: :class:`.Revision`
         """
         if not isinstance(rev, revision.Revision):
-            rev = self._connection.ls(rev)
-            if not rev:
+            results = self._connection.ls(rev)
+            if not results:
+                self._connection.add(rev, self)
                 return
-            rev = rev[0]
+            
+            rev = results[0]
 
         if not rev in self:
-            if not rev.isMapped and rev.action != 'add':
-                rev.add()
-            elif rev.isMapped and rev.action != 'edit':
-                rev.edit()
+            if rev.isMapped:
+                rev.edit(self)
+            else:
+                return
 
             self._files.append(rev)
             rev.changelist = self
@@ -150,7 +160,7 @@ class Changelist(object):
         """Removes a revision from this changelist
 
         :param rev: Revision to remove
-        :type rev: :py:class:Revision
+        :type rev: :class:`.Revision`
         :param permanent: Whether or not we need to set the changelist to default
         :type permanent: bool
         """
@@ -167,7 +177,7 @@ class Changelist(object):
     def revert(self):
         """Revert all files in this changelist
 
-        :raises: ChangelistError
+        :raises: :class:`.ChangelistError`
         """
         if self._reverted:
             raise errors.ChangelistError('This changelist has been reverted')
@@ -193,7 +203,7 @@ class Changelist(object):
             description=self._description,
             files='\n'.join(['    {0}'.format(f.depotFile) for f in self._files])
         )
-        print(form)
+        
         self._connection.run('change -i', stdin=form, marshal_output=False)
         self._dirty = False
 
@@ -267,3 +277,9 @@ class Default(Changelist):
         self._time = None
         self._status = 'new'
         self._user = connection.user
+
+    def save(self):
+        """Saves the state of the changelist"""
+        files = ','.join([f.depotFile for f in self._files])
+        self._connection.run('reopen -c default {}'.format(files))
+        self._dirty = False

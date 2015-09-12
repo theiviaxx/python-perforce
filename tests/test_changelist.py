@@ -53,9 +53,11 @@ class ChangelistTests(unittest.TestCase):
             self.assertEqual(cl.description, 'testing')
             rev = self._conn.ls('//unit_test/synced.txt')[0]
             cl.append(rev)
-            cl.append(r'C:/tmp/foo.txt')
-            cl.append(r"C:\Users\brett\Perforce\p4_unit_test\unit_test\not_added.txt")
-            self._conn.add(TO_ADD, cl)
+            try:
+                cl.append(r'C:/tmp/foo.txt')
+            except errors.RevisionError:
+                pass
+            cl.append(TO_ADD)
             self.assertEqual(len(cl), 2)
             self.assertTrue(cl.isDirty)
 
@@ -79,6 +81,30 @@ class ChangelistTests(unittest.TestCase):
                 fh.write(s)
         
         cl.submit()
+
+def test_reopen():
+    c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon')
+    rev = c.ls('//unit_test/synced.txt')[0]
+    
+    default = c.findChangelist()
+    default.append(rev)
+    default.save()
+    assert len(default) == 1
+
+    cl = c.findChangelist('testing')
+    cl.append(rev)
+    cl.save()
+    assert len(cl) == 1
+
+    cl2 = c.findChangelist('testing2')
+    cl2.append(rev)
+    cl2.save()
+    assert len(cl2) == 1
+    #assert len(cl) == 0
+    rev.revert()
+    assert len(cl2) == 0
+    del cl
+    del cl2
 
 
 
