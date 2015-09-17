@@ -270,9 +270,8 @@ class Default(Changelist):
             self._files.append(revision.Revision(f['depotFile'], f))
 
         data = self._connection.run('change -o')[0]
-        data = self._connection.run('change -o')[0]
         self._change = 0
-        self._description = self._connection.run('change -o')[0]['Description']
+        self._description = data['Description']
         self._client = connection.client
         self._time = None
         self._status = 'new'
