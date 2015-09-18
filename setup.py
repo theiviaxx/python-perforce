@@ -12,11 +12,11 @@ readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
-    'path.py==5.2'
+    'path.py==8.1.2'
 ]
 
 test_requirements = [
-    'path.py==5.2'
+    'path.py==8.1.2'
 ]
 
 setup(
