@@ -19,17 +19,18 @@ from perforce import connection
 from perforce import revision
 from perforce import errors
 
+# import wingdbstub
 
 
-FILE = path.path('//unit_test/synced.txt')
-CLIENT_FILE = path.path(r"C:\Users\brett\Perforce\p4_unit_test\unit_test\synced.txt")
-TO_EDIT = path.path('//unit_test/edit.txt')
-NOT_ADDED = path.path('//unit_test/not_added.txt')
+FILE = path.path('//p4_test/synced.txt')
+CLIENT_FILE = path.path(r"C:\Users\brett\Perforce\p4_unit_tests\p4_test\synced.txt")
+TO_EDIT = path.path('//p4_test/edit.txt')
+NOT_ADDED = path.path('//p4_test/not_added.txt')
 
 
 class MarshalTests(unittest.TestCase):
     def setUp(self):
-        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon')
+        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
 
     def test_fstat(self):
         self.assertEqual(1, len(self._conn.ls(FILE)))
@@ -51,23 +52,23 @@ def test_connection_errors():
         connection.Connection(port='127.0.0.1:1666')
 
     with pytest.raises(errors.ConnectionError):
-        connection.Connection(port='127.0.0.1:1666', client='p4_unit_test')
+        connection.Connection(port='127.0.0.1:1666', client='p4_unit_tests')
 
     with pytest.raises(errors.CommandError):
-        c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon', level=3)
+        c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test', level=3)
         c.run('foo')
 
 def test_global_connection():
-    c1 = connection.connect(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon')
-    c2 = connection.connect(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon')
+    c1 = connection.connect(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    c2 = connection.connect(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
     assert c1 is c2
-    assert str(c1) == '<Connection: 127.0.0.1:1666, p4_unit_test, bdixon>'
+    assert str(c1) == '<Connection: 127.0.0.1:1666, p4_unit_tests, p4test>'
 
 def test_connection_properties():
-    c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon', level=2)
+    c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test', level=2)
     assert c.level == 2
-    assert c.client == 'p4_unit_test'
-    assert c.user == 'bdixon'
+    assert c.client == 'p4_unit_tests'
+    assert c.user == 'p4test'
     assert c.default.description == '<enter description here>'
 
 
@@ -75,11 +76,11 @@ def test_connection_properties():
 
 class RevisionTests(unittest.TestCase):
     def setUp(self):
-        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon', level=1)
+        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test', level=1)
 
     def test_properties(self):
         r = self._conn.ls(FILE)[0]
-        self.assertEqual('<Revision: //unit_test/synced.txt#2>', repr(r))
+        self.assertEqual('<Revision: //p4_test/synced.txt#2>', repr(r))
         self.assertEqual(FILE, r.depotFile)
         self.assertEqual(CLIENT_FILE.lower(), r.clientFile.lower())
         self.assertEqual(2, r.revision)
@@ -96,7 +97,7 @@ class RevisionTests(unittest.TestCase):
 
         r = self._conn.ls(TO_EDIT)[0]
         self.assertEqual('edit', r.action)
-        self.assertEqual(2, r.changelist.change)
+        self.assertEqual(173, r.changelist.change)
         self.assertEqual(None, r.description)
         self.assertEqual('text', r.type)
         self.assertEqual('BEB6A43ADFB950EC6F82CEED19BEEE21', r.hash)
@@ -111,7 +112,7 @@ class RevisionTests(unittest.TestCase):
         self.assertFalse(r.isLocked)
         r.sync()
 
-        r = self._conn.ls('//unit_test/not_synced.txt')[0]
+        r = self._conn.ls('//p4_test/not_synced.txt')[0]
         r.sync()
         self.assertTrue(r.isSynced)
         r.sync(revision=1)
@@ -121,11 +122,11 @@ class RevisionTests(unittest.TestCase):
         r = self._conn.ls(TO_EDIT)[0]
 
         self.assertEqual('edit', r.head.action)
-        self.assertEqual(7, r.head.change)
-        self.assertEqual(2, r.head.revision)
+        self.assertEqual(230, r.head.change)
+        self.assertEqual(3, r.head.revision)
         self.assertEqual('text', r.head.type)
-        self.assertEqual(datetime.datetime(2015, 9, 7, 14, 36, 59), r.head.time)
-        self.assertEqual(datetime.datetime(2015, 9, 7, 14, 36, 53), r.head.modifiedTime)
+        self.assertEqual(datetime.datetime(2015, 9, 17, 22, 58, 4), r.head.time)
+        self.assertEqual(datetime.datetime(2015, 9, 11, 8, 20, 44), r.head.modifiedTime)
         self.assertTrue(r.head.time > r.head.modifiedTime)
 
     def test_errors(self):
@@ -140,7 +141,7 @@ class RevisionTests(unittest.TestCase):
 
 
 def test_not_added():
-    c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_test', user='bdixon')
+    c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
     rev = c.ls(NOT_ADDED)
     assert len(rev) == 0
 

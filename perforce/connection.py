@@ -59,7 +59,7 @@ class Connection(object):
     def run(self, cmd, stdin=None, marshal_output=True):
         """Runs a p4 command and returns a list of dictionary objects"""
         records = []
-        command = [self._executable, "-p", self._port, "-c", self._client]
+        command = [self._executable, "-u", self._user, "-p", self._port, "-c", self._client]
         if marshal_output:
             command.append('-G')
         command += cmd.split()
@@ -127,7 +127,7 @@ class Connection(object):
             if isinstance(description, (int)):
                 change = changelist.Changelist(self, description)
             else:
-                pending = self.run('changes -s pending')
+                pending = self.run('changes -s pending -u {}'.format(self._user))
                 for cl in pending:
                     if cl['desc'].strip() == description.strip():
                         change = changelist.Changelist(self, int(cl['change']))

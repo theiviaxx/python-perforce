@@ -48,7 +48,7 @@ class Revision(object):
         :type changelist: :class:`.Changelist`
         """
         command = 'reopen' if self.action in ('add', 'edit') else 'edit'
-        if changelist:
+        if int(changelist):
             self._connection.run('{0} -c {1} {2}'.format(command, int(changelist), self.depotFile))
         else:
             self._connection.run('{0} {1}'.format(command, self.depotFile))

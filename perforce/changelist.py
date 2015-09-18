@@ -148,8 +148,6 @@ class Changelist(object):
         if not rev in self:
             if rev.isMapped:
                 rev.edit(self)
-            else:
-                return
 
             self._files.append(rev)
             rev.changelist = self
@@ -267,12 +265,11 @@ class Default(Changelist):
         data = self._connection.run('opened -c default')
         
         for f in data:
-            self._files.append(revision.Revision(f['depotFile'], f))
+            self._files.append(revision.Revision(f, self._connection))
 
         data = self._connection.run('change -o')[0]
-        data = self._connection.run('change -o')[0]
         self._change = 0
-        self._description = self._connection.run('change -o')[0]['Description']
+        self._description = data['Description']
         self._client = connection.client
         self._time = None
         self._status = 'new'
