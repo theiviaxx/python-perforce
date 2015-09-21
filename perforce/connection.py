@@ -133,8 +133,7 @@ class Connection(object):
                         change = changelist.Changelist(self, int(cl['change']))
                         break
                 else:
-                    change = changelist.create(self)
-                    change.description = description
+                    change = changelist.create(self, description)
                     change.client = self._client
                     change.save()
 

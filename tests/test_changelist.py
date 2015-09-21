@@ -108,6 +108,21 @@ def test_reopen():
     del cl
     del cl2
 
+def test_descriptions():
+    c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+
+    cl = c.findChangelist('testing')
+    assert cl.description == 'testing'
+    del cl
+    
+    cl = c.findChangelist('this\nis\nmultiline')
+    assert format(cl).endswith('Client: p4_unit_tests\n\nUser:   p4test\n\nStatus: pending\n\nDescription:\n\tthis\n\tis\n\tmultiline\n\t\n\nFiles:\n\n')
+    del cl
+
+    cl = c.findChangelist('this\nis\nmultiline\n\n')
+    assert format(cl).endswith('Client: p4_unit_tests\n\nUser:   p4test\n\nStatus: pending\n\nDescription:\n\tthis\n\tis\n\tmultiline\n\t\n\nFiles:\n\n')
+    del cl
+
 
 
 if __name__ == '__main__':

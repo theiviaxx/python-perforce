@@ -12,16 +12,16 @@ readme = open('README.rst').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 requirements = [
-    'path.py==5.2'
+    'path.py==8.1.1'
 ]
 
 test_requirements = [
-    'path.py==5.2'
+    'path.py==8.1.1'
 ]
 
 setup(
     name='python-perforce',
-    version='0.2.3',
+    version='0.2.4',
     description='Pure python Perforce API',
     long_description=readme + '\n\n' + history,
     author='Brett Dixon',

@@ -20,7 +20,7 @@ User:   {user}
 Status: {status}
 
 Description:
-    {description}
+\t{description}
 
 Files:
 {files}
@@ -33,14 +33,20 @@ Client: {client}
 Status: new
 
 Description:
-    {description}
+\t{description}
 
 """
 
 
-def create(connection):
-    """Creates a new changelist"""
-    form = NEW_FORMAT.format(client=connection._client, description='<Created by Python>')
+def create(connection, description='<Created by Python>'):
+    """Creates a new changelist
+
+    :param description: Description for new changelist
+    :type description: str
+    :returns: :class:`.Changelist`
+    """
+    description = description.replace('\n', '\n\t')
+    form = NEW_FORMAT.format(client=connection.client, description=description)
     result = connection.run('change -i', form, marshal_output=False)
 
     return Changelist(connection, int(result.split()[1]))
@@ -115,12 +121,24 @@ class Changelist(object):
         except errors.ChangelistError:
             pass
 
-        self._connection.run('change -d {0}'.format(self._change))
+        self._connection.run('change -d {}'.format(self._change))
+
+    def __format__(self, *args, **kwargs):
+        kwargs = {
+            'change': self._change,
+            'client': self._client,
+            'user': self._user,
+            'status': self._status,
+            'description': self._description.replace('\n', '\n\t'),
+            'files': '\n'.join(['\t{}'.format(f.depotFile) for f in self._files])
+        }
+
+        return FORMAT.format(**kwargs)
 
     def query(self):
         """Queries the depot to get the current status of the changelist"""
         self._files = []
-        data = self._connection.run('describe {0}'.format(self._change))[0]
+        data = self._connection.run('describe {}'.format(self._change))[0]
         self._description = data['desc']
         self._client = data['client']
         self._time = datetime.datetime.fromtimestamp(int(data['time']))
@@ -192,17 +210,7 @@ class Changelist(object):
 
     def save(self):
         """Saves the state of the changelist"""
-        form = FORMAT.format(
-            change=self._change,
-            client=self._client,
-            #time=self._time,
-            user=self._user,
-            status=self._status,
-            description=self._description,
-            files='\n'.join(['    {0}'.format(f.depotFile) for f in self._files])
-        )
-        
-        self._connection.run('change -i', stdin=form, marshal_output=False)
+        self._connection.run('change -i', stdin=format(self), marshal_output=False)
         self._dirty = False
 
     def submit(self):
@@ -234,7 +242,7 @@ class Changelist(object):
 
     @description.setter
     def description(self, desc):
-        self._description = desc
+        self._description = desc.strip()
         self._dirty = True
     
     @property
