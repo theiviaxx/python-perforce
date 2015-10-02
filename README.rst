@@ -2,14 +2,9 @@
 Python Perforce
 ===============================
 
-.. image:: https://travis-ci.org/theiviaxx/python-perforce.png?branch=master
-        :target: https://travis-ci.org/theiviaxx/python-perforce
-
-
-
 Pure python perforce API
 
-* Free software: BSD license
+* Free software: MIT license
 * Documentation: https://python-perforce.readthedocs.org.
 
 Features
