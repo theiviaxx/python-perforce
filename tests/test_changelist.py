@@ -15,30 +15,29 @@ import string
 
 import path
 
-from perforce import connection
-from perforce import changelist
+from perforce import Connection
 from perforce import errors
 
 # import wingdbstub
 
 
 TO_ADD = path.path(r"C:\Users\brett\Perforce\p4_unit_tests\p4_test\to_add1.txt")
-
+CL = 398
 
 class ChangelistTests(unittest.TestCase):
     def setUp(self):
-        self._conn = connection.Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+        self._conn = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
 
     def test_changelist(self):
-        cl = self._conn.findChangelist(173)
+        cl = self._conn.findChangelist(CL)
         self.assertEqual(cl.description, 'DO NOT COMMIT')
         self.assertEqual(len(cl), 1)
-        self.assertEqual(173, int(cl))
+        self.assertEqual(CL, int(cl))
         self.assertEqual('p4_unit_tests', cl.client)
         self.assertEqual('pending', cl.status)
         self.assertEqual('p4test', cl.user)
-        self.assertEqual(datetime.datetime(2015, 9, 17, 22, 2, 41), cl.time)
-        self.assertEqual(str(cl), '<Changelist 173>')
+        self.assertEqual(datetime.datetime(2015, 10, 1, 23, 6, 15), cl.time)
+        self.assertEqual(str(cl), '<Changelist {}>'.format(CL))
 
         default = self._conn.findChangelist()
 
@@ -85,7 +84,7 @@ class ChangelistTests(unittest.TestCase):
         cl.submit()
 
 def test_reopen():
-    c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
     rev = c.ls('//p4_test/synced.txt')[0]
     
     default = c.findChangelist()
@@ -109,7 +108,7 @@ def test_reopen():
     del cl2
 
 def test_descriptions():
-    c = connection.Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
 
     cl = c.findChangelist('testing')
     assert cl.description == 'testing'

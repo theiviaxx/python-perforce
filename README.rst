@@ -21,8 +21,8 @@ Features
 Usage
 -----
 
-    >>> from perforce import connection
-    >>> p4 = connection.Connection()
+    >>> from perforce import connect
+    >>> p4 = connect()
     >>> revisions = p4.ls('//depot/path/to/file.txt')
     >>> print(revisions)
     [<Revision 1: file.txt>]

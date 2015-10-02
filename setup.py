@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import re
 
 try:
     from setuptools import setup
@@ -18,10 +19,18 @@ requirements = [
 test_requirements = [
     'path.py==8.1.1'
 ]
+version = ''
+with open('perforce/__init__.py', 'r') as fh:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        fh.read(), re.MULTILINE).group(1)
+
+if not version:
+    raise RuntimeError('Cannot find version information')
+
 
 setup(
     name='python-perforce',
-    version='0.2.4',
+    version=version,
     description='Pure python Perforce API',
     long_description=readme + '\n\n' + history,
     author='Brett Dixon',
@@ -34,13 +43,13 @@ setup(
                  'python-perforce'},
     include_package_data=True,
     install_requires=requirements,
-    license="BSD",
+    license="MIT",
     zip_safe=False,
     keywords='python-perforce',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
+        'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',

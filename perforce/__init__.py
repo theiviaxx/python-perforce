@@ -1,10 +1,24 @@
-"""Pythonic perforce API"""
+# -*- coding: utf-8 -*-
+
+"""
+Pythonic Perforce API
+~~~~~~~~~~~~~~~~~~~~~
 
 
-__version__ = 0.1
+:copyright: (c) 2015 by Brett Dixon
+:license: MIT, see LICENSE for more details
+"""
 
-import logging
+__title__ = 'perforce'
+__version__ = '0.3.0'
+__author__ = 'Brett Dixon'
+__license__ = 'MIT'
+__copyright__ = 'Copyright 2015 Brett Dixon'
+
 import logging.config
+
+from .models import Connection, Revision, Changelist
+from .api import connect, edit, sync, info, changelist
 
 
 CONFIG = {
@@ -17,14 +31,14 @@ CONFIG = {
     },
     'handlers': {
         'default': {
-            'level':'INFO',    
+            'level':'INFO',
             'class':'logging.StreamHandler',
             'formatter': 'standard',
         },  
     },
     'loggers': {
-        '': {                  
-            'handlers': ['default'],        
+        '': {
+            'handlers': ['default'],
             'level': 'INFO',  
             'propagate': True  
         }
@@ -32,3 +46,4 @@ CONFIG = {
 }
 
 logging.config.dictConfig(CONFIG)
+
