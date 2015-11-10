@@ -11,13 +11,7 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-   readme
-   installation
-   usage
-   api
-   contributing
-   authors
-   history
+   models
 
 Indices and tables
 ==================

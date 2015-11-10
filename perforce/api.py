@@ -59,3 +59,12 @@ def changelist(description=None):
     c = connect()
     
     return c.findChangelist(description)
+
+def open(filename):
+    """Edits or Adds a filename ensuring the file is in perforce and editable
+
+    :param filename: File to check out
+    """
+    c = connect()
+    if not c.add(filename):
+        edit(filename)

@@ -195,12 +195,12 @@ class Connection(object):
         """
         try:
             if not self.canAdd(filename):
-                return
+                return None
 
-            if change is not None:
-                self.run('add -c %i %s' % (int(change), filename))
-            else:
+            if change is None:
                 self.run('add %s' % filename)
+            else:
+                self.run('add -c %i %s' % (int(change), filename))
 
             data = self.run('fstat {}'.format(filename))[0]
         except errors.CommandError:
