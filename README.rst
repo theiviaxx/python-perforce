@@ -13,11 +13,18 @@ Features
 * Pythonic api to Perforce
 * Pure python, no compiled extension
 
+Installation
+------------
+
+::
+
+    pip install python-perforce
+
 Usage
 -----
 
-    >>> from perforce import connect
-    >>> p4 = connect()
+    >>> from perforce import connection
+    >>> p4 = connection.Connection()
     >>> revisions = p4.ls('//depot/path/to/file.txt')
     >>> print(revisions)
     [<Revision 1: file.txt>]
