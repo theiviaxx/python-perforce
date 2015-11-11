@@ -66,5 +66,8 @@ def open(filename):
     :param filename: File to check out
     """
     c = connect()
-    if not c.add(filename):
-        edit(filename)
+    res = c.ls(filename)
+    if res and res[0].revision:
+        res[0].edit()
+    else:
+        c.add(filename)

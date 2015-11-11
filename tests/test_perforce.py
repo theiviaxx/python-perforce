@@ -17,6 +17,7 @@ import path
 
 from perforce import connect, Connection, Revision
 from perforce import errors
+from perforce import api
 
 # import wingdbstub
 
@@ -149,6 +150,27 @@ def test_not_added():
     assert res == True
     res = c.canAdd('foo.txt')
     assert res == False
+
+def test_open():
+    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    rev = c.ls(NOT_ADDED)
+    assert len(rev) == 0
+    api.open(NOT_ADDED)
+    rev = c.ls(NOT_ADDED)
+    assert rev[0].action == 'add'
+    api.open(NOT_ADDED)
+    rev = c.ls(NOT_ADDED)
+    assert rev[0].action == 'add'
+    rev[0].revert()
+
+    api.open(CLIENT_FILE)
+    rev = c.ls(CLIENT_FILE)
+    assert rev[0].action == 'edit'
+    api.open(CLIENT_FILE)
+    rev = c.ls(CLIENT_FILE)
+    assert rev[0].action == 'edit'
+    rev[0].revert()
+
 
 
 if __name__ == '__main__':

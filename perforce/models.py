@@ -148,7 +148,7 @@ class Connection(object):
 
         :param files: Perforce file spec
         :type files: str
-        :returns: list<Revision>
+        :returns: list<:class:`.Revision`>
         """
         if not isinstance(files, (tuple, list)):
             files = [files]
@@ -162,7 +162,7 @@ class Connection(object):
 
         :param description: The description to set or lookup
         :type description: str
-        :returns: Changelist
+        :returns: :class:`.Changelist`
         """
         if description is None:
             change = Default(self)
@@ -191,7 +191,7 @@ class Connection(object):
         :type filename: str
         :param change: Changelist to add the file to
         :type change: int
-        :returns: Revision
+        :returns: :class:`.Revision`
         """
         try:
             if not self.canAdd(filename):
