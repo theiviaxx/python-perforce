@@ -11,9 +11,11 @@ This module implements the Perforce API
 """
 
 from .models import Connection
+import errors
 
 
 __CONNECTION = None
+
 
 def connect(*args, **kwargs):
     """Creates or returns a singleton :class:`.Connection` object"""
@@ -23,15 +25,18 @@ def connect(*args, **kwargs):
 
     return __CONNECTION
 
+
 def edit(filename):
     """Checks out a file into the default changelist
 
     :param filename: File to check out
+    :type filename: str
     """
     c = connect()
     rev = c.ls(filename)
     if rev:
         rev[0].edit()
+
 
 def sync(filename):
     """Syncs a file
@@ -43,27 +48,33 @@ def sync(filename):
     if rev:
         rev[0].sync()
 
+
 def info():
     """Returns information about the current :class:`.Connection`
 
     :returns: dict
     """
     c = connect()
-    return c.run('info')
+    return c.run('info')[0]
+
 
 def changelist(description=None):
     """Gets or creates a :class:`.Changelist` object with a description
 
+    :param description: Description of changelist to find or create
+    :type description: str
     :returns: :class:`.Changelist`
     """
     c = connect()
-    
+
     return c.findChangelist(description)
+
 
 def open(filename):
     """Edits or Adds a filename ensuring the file is in perforce and editable
 
     :param filename: File to check out
+    :type filename: str
     """
     c = connect()
     res = c.ls(filename)

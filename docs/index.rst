@@ -30,6 +30,8 @@ API Documentation:
    :maxdepth: 1
 
    api
+   models
+   errors
 
 Indices and tables
 ==================

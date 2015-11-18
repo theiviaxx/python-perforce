@@ -46,3 +46,4 @@ docs/_build
 *.sublime-*
 
 wingdbstub.py
+.idea/*

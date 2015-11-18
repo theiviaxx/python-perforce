@@ -10,19 +10,19 @@ Pythonic Perforce API
 """
 
 __title__ = 'perforce'
-__version__ = '0.3.2'
+__version__ = '0.3.3'
 __author__ = 'Brett Dixon'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015 Brett Dixon'
 
 import logging.config
 
-from .models import Connection, Revision, Changelist
+from .models import Connection, Revision, Changelist, ConnectionStatus, ErrorLevel
 from .api import connect, edit, sync, info, changelist, open
 
 
 CONFIG = {
-    'version': 1,              
+    'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'standard': {
@@ -34,13 +34,13 @@ CONFIG = {
             'level':'INFO',
             'class':'logging.StreamHandler',
             'formatter': 'standard',
-        },  
+        },
     },
     'loggers': {
         '': {
             'handlers': ['default'],
-            'level': 'INFO',  
-            'propagate': True  
+            'level': 'INFO',
+            'propagate': True
         }
     }
 }

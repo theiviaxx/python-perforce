@@ -71,7 +71,7 @@ class ChangelistTests(unittest.TestCase):
         cl.revert()
         self.assertEqual(len(cl), 0)
 
-        del cl
+        cl.delete()
 
         cl = self._conn.findChangelist('submitting')
         with cl:
@@ -80,13 +80,13 @@ class ChangelistTests(unittest.TestCase):
             with open(rev.clientFile, 'w+') as fh:
                 s = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(64))
                 fh.write(s)
-        
+
         cl.submit()
 
 def test_reopen():
     c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
     rev = c.ls('//p4_test/synced.txt')[0]
-    
+
     default = c.findChangelist()
     default.append(rev)
     default.save()
@@ -104,23 +104,23 @@ def test_reopen():
     #assert len(cl) == 0
     rev.revert()
     assert len(cl2) == 0
-    del cl
-    del cl2
+    cl.delete()
+    cl2.delete()
 
 def test_descriptions():
     c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
 
     cl = c.findChangelist('testing')
     assert cl.description == 'testing'
-    del cl
-    
+    cl.delete()
+
     cl = c.findChangelist('this\nis\nmultiline')
     assert format(cl).endswith('Client: p4_unit_tests\n\nUser:   p4test\n\nStatus: pending\n\nDescription:\n\tthis\n\tis\n\tmultiline\n\t\n\nFiles:\n\n')
-    del cl
+    cl.delete()
 
     cl = c.findChangelist('this\nis\nmultiline\n\n')
     assert format(cl).endswith('Client: p4_unit_tests\n\nUser:   p4test\n\nStatus: pending\n\nDescription:\n\tthis\n\tis\n\tmultiline\n\t\n\nFiles:\n\n')
-    del cl
+    cl.delete()
 
 
 

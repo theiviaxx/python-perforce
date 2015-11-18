@@ -1,4 +1,15 @@
-"""Errors"""
+# -*- coding: utf-8 -*-
+
+"""
+perforce.errors
+~~~~~~~~~~~~~~~
+
+This module implements the Exceptions raised
+
+:copyright: (c) 2015 by Brett Dixon
+:license: MIT, see LICENSE for more details
+"""
+
 
 class Error(Exception):
     pass
@@ -21,4 +32,5 @@ class RevisionError(Exception):
 
 
 class ConnectionError(Exception):
-    """Errors that occured with the connection"""
+    """Errors that occurred with the connection"""
+

@@ -1,5 +1,4 @@
-errors
-========
+.. _errors:
 
 .. automodule:: perforce.errors
    :members:

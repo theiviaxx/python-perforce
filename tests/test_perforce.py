@@ -10,17 +10,13 @@ Tests for `python-perforce` module.
 
 import unittest
 import datetime
-import sys
 
 import pytest
 import path
 
-from perforce import connect, Connection, Revision
+from perforce import connect, Connection, Revision, ConnectionStatus
 from perforce import errors
 from perforce import api
-
-# import wingdbstub
-
 
 FILE = path.path('//p4_test/synced.txt')
 CLIENT_FILE = path.path(r"C:\Users\brett\Perforce\p4_unit_tests\p4_test\synced.txt")
@@ -36,9 +32,6 @@ class MarshalTests(unittest.TestCase):
     def test_fstat(self):
         self.assertEqual(1, len(self._conn.ls(FILE)))
         self.assertTrue(isinstance(self._conn.ls(FILE)[0], Revision))
-
-        # with self.assertRaises(errors.CommandError):
-        #     self._conn.ls('foo')
 
 
 # -- Connection
@@ -56,7 +49,7 @@ def test_connection_errors():
         Connection(port='127.0.0.1:1666', client='p4_unit_tests')
 
     with pytest.raises(errors.CommandError):
-        c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test', level=3)
+        c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
         c.run('foo')
 
 def test_global_connection():
@@ -66,18 +59,15 @@ def test_global_connection():
     assert str(c1) == '<Connection: 127.0.0.1:1666, p4_unit_tests, p4test>'
 
 def test_connection_properties():
-    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test', level=2)
-    assert c.level == 2
+    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    assert c.level == Connection.FAILED
     assert c.client == 'p4_unit_tests'
     assert c.user == 'p4test'
-    assert c.default.description == '<enter description here>'
-
-
 
 
 class RevisionTests(unittest.TestCase):
     def setUp(self):
-        self._conn = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test', level=1)
+        self._conn = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
 
     def test_properties(self):
         r = self._conn.ls(FILE)[0]
@@ -130,12 +120,6 @@ class RevisionTests(unittest.TestCase):
         self.assertEqual(datetime.datetime(2015, 9, 11, 8, 20, 44), r.head.modifiedTime)
         self.assertTrue(r.head.time > r.head.modifiedTime)
 
-    def test_errors(self):
-        self._conn.add('foo')
-        self._conn.level = 3
-        with self.assertRaises(errors.RevisionError):
-            self._conn.add('foo')
-
     def test_invalid(self):
         r = self._conn.ls('foo')
         self.assertEqual([], r)
@@ -171,6 +155,28 @@ def test_open():
     assert rev[0].action == 'edit'
     rev[0].revert()
 
+
+def test_bad_info():
+    c = Connection(port='127.0.0.1:1666', client='bad_client', user='p4test')
+    c.run('info')
+    with pytest.raises(errors.CommandError):
+        cl = c.findChangelist()
+
+    with pytest.raises(errors.CommandError):
+        c = Connection(port='foo', client='bar', user='baz')
+        c.run('info')
+
+def test_status():
+    c = Connection(port='127.0.0.1:1666', client='bad_client', user='p4test')
+    assert c.status == ConnectionStatus.INVALID_CLIENT
+
+    c = Connection(port='foo', client='bar', user='baz')
+    assert c.status == ConnectionStatus.OFFLINE
+
+    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    assert c.status == ConnectionStatus.OK
+    api.connect(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    assert api.connect().status == ConnectionStatus.OK
 
 
 if __name__ == '__main__':
