@@ -3,8 +3,14 @@
 History
 -------
 
-0.3.3 (2015-10-16)
------------------
+0.3.4 (2015-11-17)
+--------------------
+
+* Changed enums to be namedtuples
+* Fixed bug when detecting login state
+
+0.3.3 (2015-11-16)
+---------------------
 
 * Corrected the way the error levels were being handled
 * Added more documentation
