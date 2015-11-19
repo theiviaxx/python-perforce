@@ -15,7 +15,7 @@ import string
 
 import path
 
-from perforce import Connection
+from perforce import Connection, Changelist
 from perforce import errors
 
 # import wingdbstub
@@ -122,6 +122,11 @@ def test_descriptions():
     assert format(cl).endswith('Client: p4_unit_tests\n\nUser:   p4test\n\nStatus: pending\n\nDescription:\n\tthis\n\tis\n\tmultiline\n\t\n\nFiles:\n\n')
     cl.delete()
 
+def test_changelist_object():
+    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    cl = Changelist(c, 145)
+    assert len(cl) == 1
+    assert cl[0].isEdit == False
 
 
 if __name__ == '__main__':

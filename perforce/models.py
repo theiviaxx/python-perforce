@@ -296,9 +296,11 @@ class Changelist(object):
             self._status = data['status']
             self._user = data['user']
 
+            depotfiles = []
             for k, v in data.iteritems():
                 if k.startswith('depotFile'):
-                    self.append(v)
+                    depotfiles.append(v)
+            self._files = connection.ls(depotfiles)
 
     def __repr__(self):
         return '<Changelist {}>'.format(self._change)
@@ -355,9 +357,11 @@ class Changelist(object):
         self._status = data['status']
         self._user = data['user']
 
+        depotfiles = []
         for k, v in data.iteritems():
             if k.startswith('depotFile'):
-                self.append(v)
+                depotfiles.append(v)
+        self._files = self._connection.ls(depotfiles)
 
     def append(self, rev):
         """Adds a :py:class:Revision to this changelist and adds or checks it out if needed
@@ -528,9 +532,14 @@ class Default(Changelist):
 
 class Revision(object):
     """A Revision represents a file on perforce at a given point in it's history"""
-    def __init__(self, data, connection):
-        self._p4dict = data
-        self._connection = connection
+    def __init__(self, connection, data):
+        if isinstance(connection, Connection):
+            self._connection = connection
+            self._p4dict = data
+        else:
+            # -- Backwards compatible argument order
+            self._p4dict = connection
+            self._connection = data
         self._head = HeadRevision(self._p4dict)
         self._changelist = None
         self._filename = None
