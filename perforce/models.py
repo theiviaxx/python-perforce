@@ -17,6 +17,7 @@ import os
 import marshal
 import logging
 from collections import namedtuple
+from functools import wraps
 
 import path
 
@@ -60,6 +61,7 @@ ConnectionStatus = namedtuple('ConnectionStatus', 'OK, OFFLINE, NO_AUTH, INVALID
 
 def split_ls(func):
     """Decorator to split files into manageable chunks as not to exceed the windows cmd limit"""
+    @wraps(func)
     def wrapper(self, files, silent=True, exclude_deleted=False):
         if not isinstance(files, (tuple, list)):
             files = [files]
@@ -116,6 +118,7 @@ and port')
 
     @property
     def client(self):
+        """The client used in perforce queries"""
         return self._client
 
     @client.setter
@@ -124,6 +127,7 @@ and port')
 
     @property
     def user(self):
+        """The user used in perforce queries"""
         return self._user
 
     @property
@@ -138,6 +142,7 @@ and port')
 
     @property
     def status(self):
+        """The status of the connection to perforce"""
         try:
             # -- Check client
             res = self.run('info')
