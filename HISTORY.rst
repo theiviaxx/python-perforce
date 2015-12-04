@@ -3,6 +3,15 @@
 History
 -------
 
+0.3.6 (2015-12-3)
+--------------------
+* Added __iadd_ operator to Changelist
+* Added unchanged_only flag to Changelist.revert()
+* Added exclude_deleted flag to Connection.ls()
+* Fixed a bug on windows that would occur if the command line was too long (>8190)
+* Added setter to Connection.client
+* Changelist.append will now raise a RevisionError if the file to append is not under the clients root
+
 0.3.5 (2015-11-18)
 --------------------
 

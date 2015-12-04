@@ -272,7 +272,7 @@ and port')
         """
         try:
             if not self.canAdd(filename):
-                return None
+                raise errors.RevisionError('File is not under client path')
 
             if change is None:
                 self.run('add %s' % filename)
