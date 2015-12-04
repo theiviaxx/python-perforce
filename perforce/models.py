@@ -24,6 +24,7 @@ from perforce import errors
 
 
 LOGGER = logging.getLogger('Perforce')
+CHAR_LIMIT = 8000
 FORMAT = """Change: {change}
 
 Client: {client}
@@ -57,6 +58,40 @@ ErrorLevel = namedtuple('ErrorLevel', 'EMPTY, INFO, WARN, FAILED, FATAL')(*range
 ConnectionStatus = namedtuple('ConnectionStatus', 'OK, OFFLINE, NO_AUTH, INVALID_CLIENT')(*range(4))
 
 
+def split_ls(func):
+    """Decorator to split files into manageable chunks as not to exceed the windows cmd limit"""
+    def wrapper(self, files, silent=True, exclude_deleted=False):
+        if not isinstance(files, (tuple, list)):
+            files = [files]
+
+        counter = 0
+        index = 0
+        results = []
+
+        while files:
+            if index >= len(files):
+                results += func(self, files, silent, exclude_deleted)
+                break
+
+            length = len(str(files[index]))
+            if length + counter > CHAR_LIMIT:
+                # -- at our limit
+                runfiles = files[:index]
+                files = files[index:]
+                counter = 0
+                index = 0
+                results += func(self, runfiles, silent, exclude_deleted)
+                runfiles = None
+                del runfiles
+            else:
+                index += 1
+                counter += length
+
+        return results
+
+    return wrapper
+
+
 class Connection(object):
     """This is the connection to perforce and does all of the communication with the perforce server"""
     def __init__(self, port=None, client=None, user=None, executable='p4', level=ErrorLevel.FAILED):
@@ -82,6 +117,10 @@ and port')
     @property
     def client(self):
         return self._client
+
+    @client.setter
+    def client(self, value):
+        self._client = value
 
     @property
     def user(self):
@@ -147,7 +186,6 @@ and port')
 
         if stdin:
             proc.stdin.write(stdin)
-        proc.stdin.close()
 
         if marshal_output:
             try:
@@ -168,20 +206,23 @@ and port')
 
         return records
 
-    def ls(self, files, silent=True):
+    @split_ls
+    def ls(self, files, silent=True, exclude_deleted=False):
         """List files
 
         :param files: Perforce file spec
         :type files: str
         :param silent: Will not raise error for invalid files or files not under the client
         :type silent: bool
+        :param exclude_deleted: Exclude deleted files from the query
+        :type exclude_deleted: bool
         :raises: :class:`.errors.RevisionError`
         :returns: list<:class:`.Revision`>
         """
-        if not isinstance(files, (tuple, list)):
-            files = [files]
-
         try:
+            if exclude_deleted:
+                files = [f['depotFile'] for f in self.run('files -e {}'.format(' '.join(files)))]
+
             results = self.run('fstat {}'.format(' '.join(files)))
         except errors.CommandError as err:
             if silent:
@@ -335,6 +376,20 @@ class Changelist(object):
     def __len__(self):
         return len(self._files)
 
+    def __iadd__(self, other):
+        if isinstance(other, list):
+            currentfiles = self._files[:]
+            try:
+                files = [str(f) for f in other]
+                self._connection.run('edit -c {} {}'.format(self.change, ' '.join(files)))
+                self._files += other
+                self.save()
+            except errors.CommandError:
+                self._files = currentfiles
+                raise
+
+        return self
+
     def __format__(self, *args, **kwargs):
         kwargs = {
             'change': self._change,
@@ -404,9 +459,11 @@ class Changelist(object):
         if not permanent:
             rev.changelist = self._connection.default
 
-    def revert(self):
+    def revert(self, unchanged_only=False):
         """Revert all files in this changelist
 
+        :param unchanged_only: Only revert unchanged files
+        :type unchanged_only: bool
         :raises: :class:`.ChangelistError`
         """
         if self._reverted:
@@ -416,9 +473,15 @@ class Changelist(object):
         if self._change == 0:
             change = 'default'
 
+        cmd = ['revert', '-c', str(change)]
+
+        if unchanged_only:
+            cmd.append('-a')
+
         filelist = [str(f) for f in self]
         if filelist:
-            self._connection.run('revert -c {0} {1}'.format(change, ' '.join(filelist)))
+            cmd += filelist
+            self._connection.run(' '.join(cmd))
 
         self._files = []
         self._reverted = True
@@ -598,7 +661,7 @@ class Revision(object):
 
         self.query()
 
-    def sync(self, force=False, safe=True, revision=0):
+    def sync(self, force=False, safe=True, revision=0, changelist=0):
         """Syncs the file at the current revision
 
         :param force: Force the file to sync
@@ -607,6 +670,8 @@ class Revision(object):
         :type safe: bool
         :param revision: Sync to a specific revision
         :type revision: int
+        :param changelist: Changelist to sync to
+        :type changelist: int
         """
         args = ''
         if force:
@@ -618,6 +683,9 @@ class Revision(object):
         args += ' %s' % self.depotFile
         if revision:
             args += '#{}'.format(revision)
+        elif changelist:
+            args += '@{}'.format(changelist)
+
         self._connection.run('sync %s' % args)
 
         self.query()

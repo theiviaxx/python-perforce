@@ -129,5 +129,14 @@ def test_changelist_object():
     assert cl[0].isEdit == False
 
 
+def test_iadd():
+    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    cl = c.findChangelist('iadd')
+    files = c.ls('//p4_test/s...', exclude_deleted=True)
+    cl += files
+    assert len(cl) == 2
+    cl.delete()
+
+
 if __name__ == '__main__':
     unittest.main()

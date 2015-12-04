@@ -178,6 +178,16 @@ def test_status():
     api.connect(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
     assert api.connect().status == ConnectionStatus.OK
 
+def test_moved():
+    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    assert '//p4_test/moved.txt' in [f.depotFile for f in c.ls('//p4_test/...')]
+    assert '//p4_test/moved.txt' not in [f.depotFile for f in c.ls('//p4_test/...', exclude_deleted=True)]
+
+
+def test_too_many_files():
+    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    assert c.ls(['0'*1001, '0'*1001, '0'*1001, '0'*1001, '0'*1001, '0'*1001, '0'*1001, '0'*1001, ]) == []
+
 
 if __name__ == '__main__':
     unittest.main()
