@@ -171,10 +171,10 @@ and port')
         :returns: list, records of results
         """
         records = []
-        command = [self._executable, "-u", self._user, "-p", self._port, "-c", self._client]
+        args = [self._executable, "-u", self._user, "-p", self._port, "-c", self._client]
         if marshal_output:
-            command.append('-G')
-        command += cmd.split()
+            args.append('-G')
+        command = '{} {}'.format(' '.join(args), cmd)
 
         startupinfo = None
         if os.name == 'nt':
@@ -197,7 +197,9 @@ and port')
                 while True:
                     record = marshal.load(proc.stdout)
                     if record.get('code', '') == 'error' and record['severity'] >= self._level:
-                        raise errors.CommandError(record['data'], record, ' '.join(command))
+                        proc.stdin.close()
+                        proc.stdout.close()
+                        raise errors.CommandError(record['data'], record, command)
                     records.append(record)
             except EOFError:
                 pass
@@ -225,10 +227,13 @@ and port')
         :returns: list<:class:`.Revision`>
         """
         try:
+            cmd = ['fstat']
             if exclude_deleted:
-                files = [f['depotFile'] for f in self.run('files -e {}'.format(' '.join(files)))]
+                cmd.append('-F "^headAction=delete ^headAction=move/delete"')
 
-            results = self.run('fstat {}'.format(' '.join(files)))
+            cmd.append('"{}"'.format('" "'.join(files)))
+
+            results = self.run(' '.join(cmd))
         except errors.CommandError as err:
             if silent:
                 results = []
@@ -386,7 +391,7 @@ class Changelist(object):
             currentfiles = self._files[:]
             try:
                 files = [str(f) for f in other]
-                self._connection.run('edit -c {} {}'.format(self.change, ' '.join(files)))
+                self._connection.run('edit -c {} "{}"'.format(self.change, '" "'.join(files)))
                 self._files += other
                 self.save()
             except errors.CommandError:
@@ -394,6 +399,9 @@ class Changelist(object):
                 raise
 
         return self
+
+    def __eq__(self, other):
+        return int(self) == int(other)
 
     def __format__(self, *args, **kwargs):
         kwargs = {
@@ -483,7 +491,7 @@ class Changelist(object):
         if unchanged_only:
             cmd.append('-a')
 
-        filelist = [str(f) for f in self]
+        filelist = ['"{}"'.format(f) for f in self]
         if filelist:
             cmd += filelist
             self._connection.run(' '.join(cmd))

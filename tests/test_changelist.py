@@ -122,6 +122,12 @@ def test_descriptions():
     assert format(cl).endswith('Client: p4_unit_tests\n\nUser:   p4test\n\nStatus: pending\n\nDescription:\n\tthis\n\tis\n\tmultiline\n\t\n\nFiles:\n\n')
     cl.delete()
 
+    cl1 = c.findChangelist('this\nis\n\nmultiline')
+    cl2 = c.findChangelist('this\nis\n\nmultiline')
+    assert cl1 == cl2
+    cl1.delete()
+
+
 def test_changelist_object():
     c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
     cl = Changelist(c, 145)
@@ -134,7 +140,7 @@ def test_iadd():
     cl = c.findChangelist('iadd')
     files = c.ls('//p4_test/s...', exclude_deleted=True)
     cl += files
-    assert len(cl) == 2
+    assert len(cl) == 3
     cl.delete()
 
 

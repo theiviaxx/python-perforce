@@ -3,6 +3,12 @@
 History
 -------
 
+0.3.7 (2015-1-7)
+--------------------
+* Fixed bugs regarding spaces in file names or specs
+* Fixed bug that may have left too many file handles open
+* Added comparison operator to Changelist
+
 0.3.6 (2015-12-3)
 --------------------
 * Added __iadd_ operator to Changelist
