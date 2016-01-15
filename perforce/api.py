@@ -11,7 +11,7 @@ This module implements the Perforce API
 """
 
 from .models import Connection
-import errors
+from . import errors
 
 
 __CONNECTION = None
