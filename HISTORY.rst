@@ -3,6 +3,10 @@
 History
 -------
 
+0.3.9 (2016-1-29)
+--------------------
+* Changelist objects are lazy and wil only query files as needed
+
 0.3.7 (2015-1-7)
 --------------------
 * Fixed bugs regarding spaces in file names or specs

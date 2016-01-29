@@ -328,7 +328,7 @@ class Changelist(object):
         super(Changelist, self).__init__()
 
         self._connection = connection
-        self._files = []
+        self._files = None
         self._dirty = False
         self._reverted = False
 
@@ -340,18 +340,12 @@ class Changelist(object):
         self._user = ''
 
         if self._change:
-            data = self._connection.run('describe {0}'.format(changelist))[0]
-            self._description = data['desc']
-            self._client = data['client']
-            self._time = datetime.datetime.fromtimestamp(int(data['time']))
-            self._status = data['status']
-            self._user = data['user']
-
-            depotfiles = []
-            for k, v in data.iteritems():
-                if k.startswith('depotFile'):
-                    depotfiles.append(v)
-            self._files = connection.ls(depotfiles)
+            data = self._connection.run('change -o {0}'.format(changelist))[0]
+            self._description = data['Description']
+            self._client = data['Client']
+            self._time = datetime.datetime.strptime(data['Date'], "%Y/%m/%d %H:%M:%S")
+            self._status = data['Status']
+            self._user = data['User']
 
     def __repr__(self):
         return '<Changelist {}>'.format(self._change)
@@ -376,17 +370,29 @@ class Changelist(object):
         if not isinstance(other, Revision):
             raise TypeError('Value needs to be a Revision instance')
 
+        if self._files is None:
+            self.query()
+
         names = [f.depotFile for f in self._files]
 
         return other.depotFile in names
 
     def __getitem__(self, name):
+        if self._files is None:
+            self.query()
+
         return self._files[name]
 
     def __len__(self):
+        if self._files is None:
+            self.query()
+
         return len(self._files)
 
     def __iadd__(self, other):
+        if self._files is None:
+            self.query()
+
         if isinstance(other, list):
             currentfiles = self._files[:]
             try:
@@ -404,6 +410,9 @@ class Changelist(object):
         return int(self) == int(other)
 
     def __format__(self, *args, **kwargs):
+        if self._files is None:
+            self.query()
+
         kwargs = {
             'change': self._change,
             'client': self._client,
@@ -418,6 +427,9 @@ class Changelist(object):
     def query(self):
         """Queries the depot to get the current status of the changelist"""
         self._files = []
+        if not self._change:
+            return
+
         data = self._connection.run('describe {}'.format(self._change))[0]
         self._description = data['desc']
         self._client = data['client']
