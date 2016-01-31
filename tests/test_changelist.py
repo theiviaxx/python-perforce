@@ -8,12 +8,14 @@ test_python-perforce
 Tests for `python-perforce` module.
 """
 
+import os
 import unittest
 import datetime
 import random
 import string
 
 import path
+import pytest
 
 from perforce import Connection, Changelist
 from perforce import errors
@@ -27,6 +29,7 @@ CL = 398
 class ChangelistTests(unittest.TestCase):
     def setUp(self):
         self._conn = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+        pytest.deprecated_call(self._conn.findChangelist, CL)
 
     def test_changelist(self):
         cl = self._conn.findChangelist(CL)
@@ -133,6 +136,13 @@ def test_changelist_object():
     cl = Changelist(c, 145)
     assert len(cl) == 1
     assert cl[0].isEdit == False
+
+    os.chdir(r'C:\Users\brett\Perforce\p4_unit_tests_alt\p4_test')
+    os.environ['P4CONFIG'] = '.p4config'
+    cl = Changelist(145)
+    assert len(cl) == 1
+    assert cl[0].isEdit == False
+    os.environ['P4CONFIG'] = ''
 
 
 def test_iadd():

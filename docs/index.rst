@@ -8,8 +8,8 @@ Welcome to Python Perforce's documentation!
 
 ::
 
-    >>> from perforce import connection
-    >>> p4 = connection.Connection()
+    >>> import perforce
+    >>> p4 = perforce.connect()
     >>> revisions = p4.ls('//depot/path/to/file.txt')
     >>> print(revisions)
     [<Revision 1: file.txt>]
@@ -23,6 +23,11 @@ Welcome to Python Perforce's documentation!
     'my description'
     >>> cl.description = 'something else'
     >>> cl.submit()
+    >>> client = perforce.Client('my_client')
+    >>> print(client.stream)
+    //streams/main
+    >>> print(client.root)
+    Path(/path/to/root)
 
 API Documentation:
 

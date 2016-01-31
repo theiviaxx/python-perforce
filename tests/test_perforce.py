@@ -61,7 +61,7 @@ def test_global_connection():
 def test_connection_properties():
     c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
     assert c.level == ErrorLevel.FAILED
-    assert c.client == 'p4_unit_tests'
+    assert unicode(c.client) == 'p4_unit_tests'
     assert c.user == 'p4test'
 
 

@@ -3,9 +3,17 @@
 History
 -------
 
+0.3.10 (2016-1-30)
+--------------------
+* Added Client object
+* Added better support for finding p4 env variables
+* Added PendingDeprecationWarnings to Changelist and Revision to accept an optional Connection object.  If not provided, it will use whatever settings it can find to create one
+* For Changelist, Revision, and Client, added __getattr__ to use the underlying dict to allow use of all fields if not directly supported by this lib
+* Connection.run() now requires a list instead of a string for the command.  A PendingDeprecationWarning will be thrown if a string is used.  Strings will not be supported in 0.4.0
+
 0.3.9 (2016-1-29)
 --------------------
-* Changelist objects are lazy and wil only query files as needed
+* Changelist objects are lazy and will only query files as needed
 
 0.3.7 (2015-1-7)
 --------------------
