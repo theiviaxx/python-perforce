@@ -3,6 +3,10 @@
 History
 -------
 
+0.3.12 (2016-2-16)
+--------------------
+* Added an optional connection paramter to all api functions
+
 0.3.11 (2016-2-16)
 --------------------
 * Added a base class for perforce objects to wrap dict getter
