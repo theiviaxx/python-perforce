@@ -152,7 +152,3 @@ def test_iadd():
     cl += files
     assert len(cl) == 3
     cl.delete()
-
-
-if __name__ == '__main__':
-    unittest.main()

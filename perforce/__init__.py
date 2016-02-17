@@ -10,14 +10,14 @@ Pythonic Perforce API
 """
 
 __title__ = 'perforce'
-__version__ = '0.3.10'
+__version__ = '0.3.11'
 __author__ = 'Brett Dixon'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015 Brett Dixon'
 
 import logging.config
 
-from .models import Connection, Revision, Changelist, ConnectionStatus, ErrorLevel
+from .models import Connection, Revision, Changelist, ConnectionStatus, ErrorLevel, Client, Stream
 from .api import connect, edit, sync, info, changelist, open
 
 

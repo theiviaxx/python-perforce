@@ -59,6 +59,8 @@ Description:
 ErrorLevel = namedtuple('ErrorLevel', 'EMPTY, INFO, WARN, FAILED, FATAL')(*range(5))
 #: Connections status enum
 ConnectionStatus = namedtuple('ConnectionStatus', 'OK, OFFLINE, NO_AUTH, INVALID_CLIENT')(*range(4))
+#: File spec http://www.perforce.com/perforce/doc.current/manuals/cmdref/filespecs.html
+FileSpec = namedtuple('FileSpec', 'depot,client')
 
 
 def split_ls(func):
@@ -119,8 +121,13 @@ and port')
         return '<Connection: {0}, {1}, {2}>'.format(self._port, unicode(self._client), self._user)
 
     def __getVariables(self):
+        """Parses the P4 env vars using 'set p4'"""
         try:
-            output = subprocess.check_output('p4 set')
+            startupinfo = None
+            if os.name == 'nt':
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            output = subprocess.check_output('p4 set', startupinfo=startupinfo)
         except subprocess.CalledProcessError as err:
             LOGGER.error(err)
             return
@@ -360,7 +367,29 @@ and port')
         return False
 
 
-class Changelist(object):
+class PerforceObject(object):
+    """Abstract class for dealing with the dictionaries coming back from p4 commands
+
+    This is a simple descriptor for the incoming P4Dict
+    """
+    def __init__(self, connection=None):
+        self._connection = connection or Connection()
+        self._p4dict = {}
+
+    def __getattr__(self, item):
+        if item in self.__dict__:
+            return self.__dict__[item]
+
+        if item in self._p4dict:
+            return self._p4dict[item]
+
+        raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, item))
+
+    def __unicode__(self):
+        return u'<{}>'.format(self.__class__.__name__)
+
+
+class Changelist(PerforceObject):
     """
     A Changelist is a collection of files that will be submitted as a single entry with a description and
     timestamp
@@ -370,12 +399,12 @@ class Changelist(object):
             warnings.warn(PendingDeprecationWarning('Using a Connection object will be an optional argument in version 0.4.0'))
         else:
             changelist, connection = connection, changelist
-        self._connection = connection or Connection()
+
+        super(Changelist, self).__init__(connection=connection)
+
         self._files = None
         self._dirty = False
         self._reverted = False
-        self._p4dict = {}
-
         self._change = changelist
 
         self.query(files=False)
@@ -415,15 +444,6 @@ class Changelist(object):
             self.query()
 
         return self._files[name]
-
-    def __getattr__(self, item):
-        if item in self.__dict__:
-            return self.__dict__[item]
-
-        if item in self._p4dict:
-            return self._p4dict[item]
-
-        raise AttributeError
 
     def __len__(self):
         if self._files is None:
@@ -658,7 +678,7 @@ class Default(Changelist):
         self._dirty = False
 
 
-class Revision(object):
+class Revision(PerforceObject):
     """A Revision represents a file on perforce at a given point in it's history"""
     def __init__(self, connection, data):
         if isinstance(connection, Connection):
@@ -667,8 +687,14 @@ class Revision(object):
             # -- Backwards compatible argument order
             data, connection = connection, data
 
-        self._connection = connection or Connection()
-        self._p4dict = data
+        super(Revision, self).__init__(connection=connection)
+
+        if isinstance(data, six.string_types):
+            self._p4dict = {'depotFile': data}
+            self.query()
+        else:
+            self._p4dict = data
+
         self._head = HeadRevision(self._p4dict)
         self._changelist = None
         self._filename = None
@@ -682,20 +708,14 @@ class Revision(object):
     def __str__(self):
         return self.depotFile
 
+    def __unicode__(self):
+        return unicode(self.depotFile)
+
     def __repr__(self):
         return '<%s: %s#%s>' % (self.__class__.__name__, self.depotFile, self.revision)
 
     def __int__(self):
         return self.revision
-
-    def __getattr__(self, item):
-        if item in self.__dict__:
-            return self.__dict__[item]
-
-        if item in self._p4dict:
-            return self._p4dict[item]
-
-        raise AttributeError
 
     def query(self):
         """Runs an fstat for this file and repopulates the data"""
@@ -782,6 +802,9 @@ class Revision(object):
 
         self._connection.run(cmd)
 
+        if 'movedFile' in self._p4dict:
+            self._p4dict['depotFile'] = self._p4dict['movedFile']
+
         if not wasadd:
             self.query()
 
@@ -829,6 +852,7 @@ class Revision(object):
 
         cmd += [self.depotFile, dest]
         self._connection.run(cmd)
+        self._p4dict['depotFile'] = dest
 
         self.query()
 
@@ -998,20 +1022,15 @@ class HeadRevision(object):
         return datetime.datetime.fromtimestamp(int(self._p4dict['headModTime']))
 
 
-class Client(object):
+class Client(PerforceObject):
     """Represents a client(workspace) for a given connection"""
     def __init__(self, client, connection=None):
-        self._connection = connection or Connection()
-        self._p4dict = {''.join((k[0].lower(), k[1:])): v for k, v in self._connection.run(['client', '-o', client])[0].iteritems()}
+        super(Client, self).__init__(connection=connection)
 
-    def __getattr__(self, item):
-        if item in self.__dict__:
-            return self.__dict__[item]
+        assert client is not None
 
-        if item in self._p4dict:
-            return self._p4dict[item]
-
-        raise AttributeError
+        results = self._connection.run(['client', '-o', client])[0]
+        self._p4dict = {''.join((k[0].lower(), k[1:])): v for k, v in results.iteritems()}
 
     def __unicode__(self):
         return unicode(self._p4dict['client'])
@@ -1024,7 +1043,7 @@ class Client(object):
     @property
     def view(self):
         """A list of view specs"""
-        return [v for k, v in self._p4dict.iteritems() if k.startswith('view')]
+        return [FileSpec(*v.split(' ')) for k, v in self._p4dict.iteritems() if k.startswith('view')]
 
     @property
     def access(self):
@@ -1038,5 +1057,39 @@ class Client(object):
 
     @property
     def stream(self):
-        """Whcih stream, if any, the client is on"""
+        """Which stream, if any, the client is under"""
         return self._p4dict.get('stream')
+
+
+class Stream(PerforceObject):
+    """An object representing a perforce stream"""
+    def __init__(self, stream, connection=None):
+        super(Stream, self).__init__(connection=connection)
+
+        assert stream is not None
+
+        results = self._connection.run(['stream', '-o', '-v', stream])[0]
+        self._p4dict = {''.join((k[0].lower(), k[1:])): v for k, v in results.iteritems()}
+
+    def __unicode__(self):
+        return unicode(self._p4dict['stream'])
+
+    @property
+    def description(self):
+        """Stream description tha thas been trimmed"""
+        return self._p4dict.get('description', '').strip()
+
+    @property
+    def view(self):
+        """A list of view specs"""
+        return [FileSpec(*v.split(' ')) for k, v in self._p4dict.iteritems() if k.startswith('view')]
+
+    @property
+    def access(self):
+        """The date and time last accessed"""
+        return datetime.datetime.strptime(self._p4dict['access'], "%Y/%m/%d %H:%M:%S")
+
+    @property
+    def update(self):
+        """The date and time the client was updated"""
+        return datetime.datetime.strptime(self._p4dict['update'], "%Y/%m/%d %H:%M:%S")

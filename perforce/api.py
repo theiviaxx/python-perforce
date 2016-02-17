@@ -10,8 +10,7 @@ This module implements the Perforce API
 :license: MIT, see LICENSE for more details
 """
 
-from .models import Connection, Client, Changelist
-from . import errors
+from .models import Connection
 
 
 __CONNECTION = None

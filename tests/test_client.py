@@ -13,7 +13,7 @@ import datetime
 
 import pytest
 
-from perforce.models import Client, Connection
+from perforce.models import Client, Connection, Stream
 from perforce import errors
 
 
@@ -24,7 +24,8 @@ def test_client_properties():
     assert c.client == 'p4test_stream'
     assert c.root == r'C:\Users\brett\Perforce\p4test_stream'
     assert c.owner == 'p4test'
-    assert c.view == ['//stream_test/main/... //p4test_stream/...']
+    assert c.view[0].depot == '//stream_test/main/...'
+    assert c.view[0].client == '//p4test_stream/...'
     assert c.stream == '//stream_test/main'
     assert isinstance(c.access, datetime.datetime)
 
@@ -38,3 +39,18 @@ def test_client_properties():
     assert c.stream is None
     os.environ['P4CONFIG'] = ''
 
+    c.client = 'p4test_stream'
+    assert c.client == 'p4test_stream'
+
+def test_stream_properties():
+    con = Connection(port='127.0.0.1:1666', user='p4test')
+    s = Stream('//stream_test/main', con)
+
+    assert s.stream == '//stream_test/main'
+    assert s.name == 'main'
+    assert s.owner == 'p4test'
+    assert s.type == 'mainline'
+    assert s.description == 'Created by p4test.'
+    assert s.view[0].depot == '//stream_test/main/...'
+    assert s.view[0].client == '...'
+    assert isinstance(s.access, datetime.datetime)

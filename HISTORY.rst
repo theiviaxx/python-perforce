@@ -3,6 +3,16 @@
 History
 -------
 
+0.3.11 (2016-2-16)
+--------------------
+* Added a base class for perforce objects to wrap dict getter
+* Added Stream object Fixes #25
+* Added tests for new classes Fixes #26
+* Added tests for Revision objects as it was lacking
+* __getVariables will no longer show a console on windows Fixes #24
+* Client and Stream are now exposed at the package level Fixes #23
+
+
 0.3.10 (2016-1-30)
 --------------------
 * Added Client object

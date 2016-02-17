@@ -61,6 +61,8 @@ def test_global_connection():
 def test_connection_properties():
     c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
     assert c.level == ErrorLevel.FAILED
+    c.level = ErrorLevel.INFO
+    assert c.level == ErrorLevel.INFO
     assert unicode(c.client) == 'p4_unit_tests'
     assert c.user == 'p4test'
 
@@ -108,6 +110,16 @@ class RevisionTests(unittest.TestCase):
         self.assertTrue(r.isSynced)
         r.sync(revision=1)
         self.assertFalse(r.isSynced)
+
+        r = Revision('//p4_test/synced.txt', self._conn)
+        r.move('//p4_test/foo.txt')
+        self.assertEqual(r.depotFile, '//p4_test/foo.txt')
+        r.revert()
+
+        r = Revision('//p4_test/synced.txt', self._conn)
+        r.delete()
+        self.assertFalse(r.clientFile.exists())
+        r.revert()
 
     def test_head(self):
         r = self._conn.ls(TO_EDIT)[0]
@@ -187,7 +199,3 @@ def test_moved():
 def test_too_many_files():
     c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
     assert c.ls(['0'*1001, '0'*1001, '0'*1001, '0'*1001, '0'*1001, '0'*1001, '0'*1001, '0'*1001, ]) == []
-
-
-if __name__ == '__main__':
-    unittest.main()
