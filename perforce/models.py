@@ -118,7 +118,7 @@ and port')
             raise errors.ConnectionError('No user could be found, please set P4USER or provide the user')
 
     def __repr__(self):
-        return '<Connection: {0}, {1}, {2}>'.format(self._port, unicode(self._client), self._user)
+        return '<Connection: {0}, {1}, {2}>'.format(self._port, str(self._client), self._user)
 
     def __getVariables(self):
         """Parses the P4 env vars using 'set p4'"""
@@ -127,13 +127,15 @@ and port')
             if os.name == 'nt':
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            output = subprocess.check_output(['p4', 'set'], startupinfo=startupinfo)
+            output = subprocess.check_output(['p4', 'set'],
+                                             startupinfo=startupinfo,
+                                             universal_newlines=True)
         except subprocess.CalledProcessError as err:
             LOGGER.error(err)
             return
 
         p4vars = {}
-        for line in output.split('\r\n'):
+        for line in output.split('\n'):
             if not line:
                 continue
             k, v = line.split('=')
@@ -210,7 +212,7 @@ and port')
         args = [self._executable, "-u", self._user, "-p", self._port]
 
         if self._client:
-            args += ["-c", unicode(self._client)]
+            args += ["-c", str(self._client)]
 
         if marshal_output:
             args.append('-G')
@@ -305,7 +307,7 @@ and port')
             if isinstance(description, six.integer_types):
                 change = Changelist(self, description)
             else:
-                pending = self.run(['changes', '-l', '-s', 'pending', '-c', unicode(self._client), '-u', self._user])
+                pending = self.run(['changes', '-l', '-s', 'pending', '-c', str(self._client), '-u', self._user])
                 for cl in pending:
                     if cl['desc'].strip() == description.strip():
                         LOGGER.debug('Changelist found: {}'.format(cl['change']))
@@ -335,7 +337,7 @@ and port')
             if change is None:
                 self.run(['add', filename])
             else:
-                self.run(['add', '-c', unicode(change.change), filename])
+                self.run(['add', '-c', str(change.change), filename])
 
             data = self.run(['fstat', filename])[0]
         except errors.CommandError as err:
@@ -459,7 +461,7 @@ class Changelist(PerforceObject):
             currentfiles = self._files[:]
             try:
                 files = [str(f) for f in other]
-                cmd = ['edit', '-c', unicode(self.change)]
+                cmd = ['edit', '-c', str(self.change)]
                 self._connection.run(cmd + files)
                 self._files += other
                 self.save()
@@ -478,7 +480,7 @@ class Changelist(PerforceObject):
 
         kwargs = {
             'change': self._p4dict['change'],
-            'client': unicode(self._p4dict['client']),
+            'client': str(self._p4dict['client']),
             'user': self._p4dict['user'],
             'status': self._p4dict['status'],
             'description': self._p4dict['description'].replace('\n', '\n\t'),
@@ -490,16 +492,16 @@ class Changelist(PerforceObject):
     def query(self, files=True):
         """Queries the depot to get the current status of the changelist"""
         if self._change:
-            self._p4dict = {''.join((k[0].lower(), k[1:])): v for k, v in self._connection.run(['change', '-o', unicode(self._change)])[0].iteritems()}
+            self._p4dict = {''.join((k[0].lower(), k[1:])): v for k, v in self._connection.run(['change', '-o', str(self._change)])[0].iteritems()}
 
         if files:
             self._files = []
             if self._p4dict.get('status') == 'pending' or self._change == 0:
                 change = self._change or 'default'
-                data = self._connection.run(['opened', '-c', unicode(change)])
+                data = self._connection.run(['opened', '-c', str(change)])
                 self._files = [Revision(self._connection, r) for r in data]
             else:
-                data = self._connection.run(['describe', unicode(self._change)])[0]
+                data = self._connection.run(['describe', str(self._change)])[0]
                 depotfiles = []
                 for k, v in data.iteritems():
                     if k.startswith('depotFile'):
@@ -585,7 +587,7 @@ class Changelist(PerforceObject):
         if self._dirty:
             self.save()
 
-        self._connection.run(['submit', '-c', unicode(self._change)], marshal_output=False)
+        self._connection.run(['submit', '-c', str(self._change)], marshal_output=False)
 
     def delete(self):
         """Reverts all files in this changelist then deletes the changelist from perforce"""
@@ -594,7 +596,7 @@ class Changelist(PerforceObject):
         except errors.ChangelistError:
             pass
 
-        self._connection.run(['change', '-d', unicode(self._change)])
+        self._connection.run(['change', '-d', str(self._change)])
 
     @property
     def change(self):
@@ -647,7 +649,7 @@ class Changelist(PerforceObject):
             connection = connection or Connection()
 
         description = description.replace('\n', '\n\t')
-        form = NEW_FORMAT.format(client=unicode(connection.client), description=description)
+        form = NEW_FORMAT.format(client=str(connection.client), description=description)
         result = connection.run(['change', '-i'], stdin=form, marshal_output=False)
 
         return Changelist(connection, int(result.split()[1]))
@@ -709,7 +711,7 @@ class Revision(PerforceObject):
         return self.depotFile
 
     def __unicode__(self):
-        return unicode(self.depotFile)
+        return str(self.depotFile)
 
     def __repr__(self):
         return '<%s: %s#%s>' % (self.__class__.__name__, self.depotFile, self.revision)
@@ -733,7 +735,7 @@ class Revision(PerforceObject):
         """
         command = 'reopen' if self.action in ('add', 'edit') else 'edit'
         if int(changelist):
-            self._connection.run([command, '-c', unicode(changelist.change), self.depotFile])
+            self._connection.run([command, '-c', str(changelist.change), self.depotFile])
         else:
             self._connection.run([command, self.depotFile])
 
@@ -822,7 +824,7 @@ class Revision(PerforceObject):
 
         cmd = ['shelve']
         if changelist:
-            cmd += ['-c', unicode(changelist)]
+            cmd += ['-c', str(changelist)]
 
         cmd.append(self.depotFile)
 
@@ -845,7 +847,7 @@ class Revision(PerforceObject):
             cmd.append('-f')
 
         if changelist:
-            cmd += ['-c', unicode(changelist)]
+            cmd += ['-c', str(changelist)]
 
         if not self.isEdit:
             self.edit(changelist)
@@ -865,7 +867,7 @@ class Revision(PerforceObject):
         cmd = ['delete']
 
         if changelist:
-            cmd += ['-c', unicode(changelist)]
+            cmd += ['-c', str(changelist)]
 
         cmd.append(self.depotFile)
         self._connection.run(cmd)
@@ -926,7 +928,7 @@ class Revision(PerforceObject):
         if self._p4dict['change'] == 'default':
             return Default(connection=self._connection)
         else:
-            return Changelist(unicode(self._p4dict['change']), self._connection)
+            return Changelist(str(self._p4dict['change']), self._connection)
 
     @changelist.setter
     def changelist(self, value):
@@ -1033,7 +1035,7 @@ class Client(PerforceObject):
         self._p4dict = {''.join((k[0].lower(), k[1:])): v for k, v in results.iteritems()}
 
     def __unicode__(self):
-        return unicode(self._p4dict['client'])
+        return str(self._p4dict['client'])
 
     @property
     def root(self):
@@ -1072,7 +1074,7 @@ class Stream(PerforceObject):
         self._p4dict = {''.join((k[0].lower(), k[1:])): v for k, v in results.iteritems()}
 
     def __unicode__(self):
-        return unicode(self._p4dict['stream'])
+        return str(self._p4dict['stream'])
 
     @property
     def description(self):
