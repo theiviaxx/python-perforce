@@ -3,6 +3,10 @@
 History
 -------
 
+0.3.13 (2016-2-17)
+--------------------
+* Changed the parameter in __getVariables to a list Fixes #27
+
 0.3.12 (2016-2-16)
 --------------------
 * Added an optional connection paramter to all api functions

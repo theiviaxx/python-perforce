@@ -127,7 +127,7 @@ and port')
             if os.name == 'nt':
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            output = subprocess.check_output('p4 set', startupinfo=startupinfo)
+            output = subprocess.check_output(['p4', 'set'], startupinfo=startupinfo)
         except subprocess.CalledProcessError as err:
             LOGGER.error(err)
             return
