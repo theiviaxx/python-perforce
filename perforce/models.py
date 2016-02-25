@@ -355,7 +355,7 @@ and port')
         :type filename: str
         """
         try:
-            result = self.run(['add', '-n', filename])[0]
+            result = self.run(['add', '-n', '-t', 'text', filename])[0]
         except errors.CommandError as err:
             return False
 

@@ -10,7 +10,7 @@ Pythonic Perforce API
 """
 
 __title__ = 'perforce'
-__version__ = '0.3.13'
+__version__ = '0.3.14'
 __author__ = 'Brett Dixon'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015 Brett Dixon'

@@ -3,6 +3,10 @@
 History
 -------
 
+0.3.14 (2016-2-24)
+--------------------
+* Fixed bug when trying to add an empty file
+
 0.3.13 (2016-2-17)
 --------------------
 * Changed the parameter in __getVariables to a list Fixes #27

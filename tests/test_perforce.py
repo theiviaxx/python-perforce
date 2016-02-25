@@ -18,10 +18,11 @@ from perforce import connect, Connection, Revision, ConnectionStatus, ErrorLevel
 from perforce import errors
 from perforce import api
 
-FILE = path.path('//p4_test/synced.txt')
-CLIENT_FILE = path.path(r"C:\Users\brett\Perforce\p4_unit_tests\p4_test\synced.txt")
-TO_EDIT = path.path('//p4_test/edit.txt')
-NOT_ADDED = path.path('//p4_test/not_added.txt')
+FILE = path.Path('//p4_test/synced.txt')
+CLIENT_FILE = path.Path(r"C:\Users\brett\Perforce\p4_unit_tests\p4_test\synced.txt")
+TO_EDIT = path.Path('//p4_test/edit.txt')
+NOT_ADDED = path.Path('//p4_test/not_added.txt')
+NOT_ADDED_EMPTY = path.Path('//p4_test/not_added_empty.txt')
 CL = 398
 
 
@@ -156,6 +157,11 @@ def test_open():
     assert rev[0].action == 'add'
     api.open(NOT_ADDED)
     rev = c.ls(NOT_ADDED)
+    assert rev[0].action == 'add'
+    rev[0].revert()
+
+    api.open(NOT_ADDED_EMPTY)
+    rev = c.ls(NOT_ADDED_EMPTY)
     assert rev[0].action == 'add'
     rev[0].revert()
 
