@@ -13,6 +13,7 @@ import datetime
 
 import pytest
 import path
+import six
 
 from perforce import connect, Connection, Revision, ConnectionStatus, ErrorLevel
 from perforce import errors
@@ -51,7 +52,8 @@ def test_connection_errors():
 
     with pytest.raises(errors.CommandError):
         c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
-        c.run('foo')
+        c.run(['foo'])
+
 
 def test_global_connection():
     c1 = connect(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
@@ -59,12 +61,13 @@ def test_global_connection():
     assert c1 is c2
     assert str(c1) == '<Connection: 127.0.0.1:1666, p4_unit_tests, p4test>'
 
+
 def test_connection_properties():
     c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
     assert c.level == ErrorLevel.FAILED
     c.level = ErrorLevel.INFO
     assert c.level == ErrorLevel.INFO
-    assert unicode(c.client) == 'p4_unit_tests'
+    assert str(c.client) == 'p4_unit_tests'
     assert c.user == 'p4test'
 
 

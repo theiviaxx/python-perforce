@@ -3,6 +3,10 @@
 History
 -------
 
+0.3.15 (2016-3-9)
+-------------------
+* Python 3 support
+
 0.3.14 (2016-2-24)
 --------------------
 * Fixed bug when trying to add an empty file

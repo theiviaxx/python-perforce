@@ -28,6 +28,7 @@ from perforce import errors
 
 LOGGER = logging.getLogger('Perforce')
 CHAR_LIMIT = 8000
+DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
 FORMAT = """Change: {change}
 
 Client: {client}
@@ -64,7 +65,11 @@ FileSpec = namedtuple('FileSpec', 'depot,client')
 
 
 def split_ls(func):
-    """Decorator to split files into manageable chunks as not to exceed the windows cmd limit"""
+    """Decorator to split files into manageable chunks as not to exceed the windows cmd limit
+
+    :param func: Function to call for each chunk
+    :type func: :py:class:Function
+    """
     @wraps(func)
     def wrapper(self, files, silent=True, exclude_deleted=False):
         if not isinstance(files, (tuple, list)):
@@ -98,6 +103,14 @@ def split_ls(func):
     return wrapper
 
 
+def camel_case(string):
+    """Makes a string camelCase
+
+    :param string: String to convert
+    """
+    return ''.join((string[0].lower(), string[1:]))
+
+
 class Connection(object):
     """This is the connection to perforce and does all of the communication with the perforce server"""
     def __init__(self, port=None, client=None, user=None, executable='p4', level=ErrorLevel.FAILED):
@@ -118,7 +131,7 @@ and port')
             raise errors.ConnectionError('No user could be found, please set P4USER or provide the user')
 
     def __repr__(self):
-        return '<Connection: {0}, {1}, {2}>'.format(self._port, unicode(self._client), self._user)
+        return '<Connection: {0}, {1}, {2}>'.format(self._port, str(self._client), self._user)
 
     def __getVariables(self):
         """Parses the P4 env vars using 'set p4'"""
@@ -128,6 +141,8 @@ and port')
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             output = subprocess.check_output(['p4', 'set'], startupinfo=startupinfo)
+            if six.PY3:
+                output = str(output, 'utf8')
         except subprocess.CalledProcessError as err:
             LOGGER.error(err)
             return
@@ -136,7 +151,7 @@ and port')
         for line in output.split('\r\n'):
             if not line:
                 continue
-            k, v = line.split('=')
+            k, v = line.split('=', 1)
             p4vars[k.strip()] = v.strip().split(' (')[0]
 
         self._port = self._port or p4vars.get('P4PORT', os.getenv('P4PORT'))
@@ -186,9 +201,9 @@ and port')
             # -- Trigger an auth error if not logged in
             self.run(['user', '-o'])
         except errors.CommandError as err:
-            if 'password (P4PASSWD) invalid or unset' in err.args[0]:
+            if 'password (P4PASSWD) invalid or unset' in str(err.args[0]):
                 return ConnectionStatus.NO_AUTH
-            if 'Connect to server failed' in err.args[0]:
+            if 'Connect to server failed' in str(err.args[0]):
                 return ConnectionStatus.OFFLINE
 
         return ConnectionStatus.OK
@@ -210,13 +225,14 @@ and port')
         args = [self._executable, "-u", self._user, "-p", self._port]
 
         if self._client:
-            args += ["-c", unicode(self._client)]
+            args += ["-c", str(self._client)]
 
         if marshal_output:
             args.append('-G')
 
         if isinstance(cmd, six.string_types):
-            warnings.warn('Connection.run() now requires a list instead of a string for the command argument.  Strings will not be supported in 0.4.0')
+            warnings.warn('Connection.run() now requires a list instead of a string for the command argument.  Strings \
+will not be supported in 0.4.0')
             cmd = cmd.split(' ')
 
         args += cmd
@@ -238,17 +254,21 @@ and port')
         )
 
         if stdin:
-            proc.stdin.write(stdin)
+            proc.stdin.write(six.b(stdin))
 
         if marshal_output:
             try:
                 while True:
                     record = marshal.load(proc.stdout)
-                    if record.get('code', '') == 'error' and record['severity'] >= self._level:
+                    if record.get(b'code', '') == b'error' and record[b'severity'] >= self._level:
                         proc.stdin.close()
                         proc.stdout.close()
-                        raise errors.CommandError(record['data'], record, command)
-                    records.append(record)
+                        raise errors.CommandError(record[b'data'], record, command)
+                    if isinstance(record, dict):
+                        if six.PY2:
+                            records.append(record)
+                        else:
+                            records.append({str(k, 'utf8'): str(v) if isinstance(v, int) else str(v, 'utf8') for k, v in record.items()})
             except EOFError:
                 pass
 
@@ -266,7 +286,7 @@ and port')
         """List files
 
         :param files: Perforce file spec
-        :type files: str
+        :type files: list
         :param silent: Will not raise error for invalid files or files not under the client
         :type silent: bool
         :param exclude_deleted: Exclude deleted files from the query
@@ -305,7 +325,7 @@ and port')
             if isinstance(description, six.integer_types):
                 change = Changelist(self, description)
             else:
-                pending = self.run(['changes', '-l', '-s', 'pending', '-c', unicode(self._client), '-u', self._user])
+                pending = self.run(['changes', '-l', '-s', 'pending', '-c', str(self._client), '-u', self._user])
                 for cl in pending:
                     if cl['desc'].strip() == description.strip():
                         LOGGER.debug('Changelist found: {}'.format(cl['change']))
@@ -335,10 +355,11 @@ and port')
             if change is None:
                 self.run(['add', filename])
             else:
-                self.run(['add', '-c', unicode(change.change), filename])
+                self.run(['add', '-c', str(change.change), filename])
 
             data = self.run(['fstat', filename])[0]
         except errors.CommandError as err:
+            LOGGER.debug(err)
             raise errors.RevisionError('File is not under client path')
 
         rev = Revision(data, self)
@@ -357,6 +378,7 @@ and port')
         try:
             result = self.run(['add', '-n', '-t', 'text', filename])[0]
         except errors.CommandError as err:
+            LOGGER.debug(err)
             return False
 
         if result.get('code') not in ('error', 'info'):
@@ -367,6 +389,7 @@ and port')
         return False
 
 
+@six.python_2_unicode_compatible
 class PerforceObject(object):
     """Abstract class for dealing with the dictionaries coming back from p4 commands
 
@@ -385,8 +408,14 @@ class PerforceObject(object):
 
         raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, item))
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return u'<{}>'.format(self.__class__.__name__)
+        return '<{}>'.format(self.__class__.__name__)
+
+    def __repr__(self):
+        return self.__unicode__()
 
 
 class Changelist(PerforceObject):
@@ -396,7 +425,8 @@ class Changelist(PerforceObject):
     """
     def __init__(self, connection, changelist=None):
         if isinstance(connection, Connection):
-            warnings.warn(PendingDeprecationWarning('Using a Connection object will be an optional argument in version 0.4.0'))
+            warnings.warn(PendingDeprecationWarning('Using a Connection object will be an optional argument in version\
+0.4.0'))
         else:
             changelist, connection = connection, changelist
 
@@ -459,7 +489,7 @@ class Changelist(PerforceObject):
             currentfiles = self._files[:]
             try:
                 files = [str(f) for f in other]
-                cmd = ['edit', '-c', unicode(self.change)]
+                cmd = ['edit', '-c', str(self.change)]
                 self._connection.run(cmd + files)
                 self._files += other
                 self.save()
@@ -478,7 +508,7 @@ class Changelist(PerforceObject):
 
         kwargs = {
             'change': self._p4dict['change'],
-            'client': unicode(self._p4dict['client']),
+            'client': str(self._p4dict['client']),
             'user': self._p4dict['user'],
             'status': self._p4dict['status'],
             'description': self._p4dict['description'].replace('\n', '\n\t'),
@@ -490,22 +520,22 @@ class Changelist(PerforceObject):
     def query(self, files=True):
         """Queries the depot to get the current status of the changelist"""
         if self._change:
-            self._p4dict = {''.join((k[0].lower(), k[1:])): v for k, v in self._connection.run(['change', '-o', unicode(self._change)])[0].iteritems()}
+            cl = str(self._change)
+            self._p4dict = {camel_case(k): v for k, v in six.iteritems(self._connection.run(['change', '-o', cl])[0])}
 
         if files:
             self._files = []
             if self._p4dict.get('status') == 'pending' or self._change == 0:
                 change = self._change or 'default'
-                data = self._connection.run(['opened', '-c', unicode(change)])
+                data = self._connection.run(['opened', '-c', str(change)])
                 self._files = [Revision(self._connection, r) for r in data]
             else:
-                data = self._connection.run(['describe', unicode(self._change)])[0]
+                data = self._connection.run(['describe', str(self._change)])[0]
                 depotfiles = []
-                for k, v in data.iteritems():
+                for k, v in six.iteritems(data):
                     if k.startswith('depotFile'):
                         depotfiles.append(v)
                 self._files = self._connection.ls(depotfiles)
-
 
     def append(self, rev):
         """Adds a :py:class:Revision to this changelist and adds or checks it out if needed
@@ -585,7 +615,7 @@ class Changelist(PerforceObject):
         if self._dirty:
             self.save()
 
-        self._connection.run(['submit', '-c', unicode(self._change)], marshal_output=False)
+        self._connection.run(['submit', '-c', str(self._change)], marshal_output=False)
 
     def delete(self):
         """Reverts all files in this changelist then deletes the changelist from perforce"""
@@ -594,7 +624,7 @@ class Changelist(PerforceObject):
         except errors.ChangelistError:
             pass
 
-        self._connection.run(['change', '-d', unicode(self._change)])
+        self._connection.run(['change', '-d', str(self._change)])
 
     @property
     def change(self):
@@ -628,7 +658,7 @@ class Changelist(PerforceObject):
     @property
     def time(self):
         """Creation time of this changelist"""
-        return datetime.datetime.strptime(self._p4dict['date'], "%Y/%m/%d %H:%M:%S")
+        return datetime.datetime.strptime(self._p4dict['date'], DATE_FORMAT)
 
     @staticmethod
     def create(connection, description='<Created by Python>'):
@@ -641,13 +671,14 @@ class Changelist(PerforceObject):
         :returns: :class:`.Changelist`
         """
         if isinstance(connection, Connection):
-            warnings.warn(PendingDeprecationWarning('Using a Connection object will be an optional argument in version 0.4.0'))
+            warnings.warn(PendingDeprecationWarning('Using a Connection object will be an optional argument in version\
+ 0.4.0'))
         else:
             description, connection = connection, description
             connection = connection or Connection()
 
         description = description.replace('\n', '\n\t')
-        form = NEW_FORMAT.format(client=unicode(connection.client), description=description)
+        form = NEW_FORMAT.format(client=str(connection.client), description=description)
         result = connection.run(['change', '-i'], stdin=form, marshal_output=False)
 
         return Changelist(connection, int(result.split()[1]))
@@ -682,7 +713,8 @@ class Revision(PerforceObject):
     """A Revision represents a file on perforce at a given point in it's history"""
     def __init__(self, connection, data):
         if isinstance(connection, Connection):
-            warnings.warn(PendingDeprecationWarning('Using a Connection object will be an optional argument in version 0.4.0'))
+            warnings.warn(PendingDeprecationWarning('Using a Connection object will be an optional argument in version\
+0.4.0'))
         else:
             # -- Backwards compatible argument order
             data, connection = connection, data
@@ -705,11 +737,8 @@ class Revision(PerforceObject):
 
         return int(self._p4dict['fileSize'])
 
-    def __str__(self):
-        return self.depotFile
-
     def __unicode__(self):
-        return unicode(self.depotFile)
+        return self.depotFile
 
     def __repr__(self):
         return '<%s: %s#%s>' % (self.__class__.__name__, self.depotFile, self.revision)
@@ -733,7 +762,7 @@ class Revision(PerforceObject):
         """
         command = 'reopen' if self.action in ('add', 'edit') else 'edit'
         if int(changelist):
-            self._connection.run([command, '-c', unicode(changelist.change), self.depotFile])
+            self._connection.run([command, '-c', str(changelist.change), self.depotFile])
         else:
             self._connection.run([command, self.depotFile])
 
@@ -822,7 +851,7 @@ class Revision(PerforceObject):
 
         cmd = ['shelve']
         if changelist:
-            cmd += ['-c', unicode(changelist)]
+            cmd += ['-c', str(changelist)]
 
         cmd.append(self.depotFile)
 
@@ -845,7 +874,7 @@ class Revision(PerforceObject):
             cmd.append('-f')
 
         if changelist:
-            cmd += ['-c', unicode(changelist)]
+            cmd += ['-c', str(changelist)]
 
         if not self.isEdit:
             self.edit(changelist)
@@ -865,7 +894,7 @@ class Revision(PerforceObject):
         cmd = ['delete']
 
         if changelist:
-            cmd += ['-c', unicode(changelist)]
+            cmd += ['-c', str(changelist)]
 
         cmd.append(self.depotFile)
         self._connection.run(cmd)
@@ -926,7 +955,7 @@ class Revision(PerforceObject):
         if self._p4dict['change'] == 'default':
             return Default(connection=self._connection)
         else:
-            return Changelist(unicode(self._p4dict['change']), self._connection)
+            return Changelist(str(self._p4dict['change']), self._connection)
 
     @changelist.setter
     def changelist(self, value):
@@ -1030,10 +1059,10 @@ class Client(PerforceObject):
         assert client is not None
 
         results = self._connection.run(['client', '-o', client])[0]
-        self._p4dict = {''.join((k[0].lower(), k[1:])): v for k, v in results.iteritems()}
+        self._p4dict = {camel_case(k): v for k, v in six.iteritems(results)}
 
     def __unicode__(self):
-        return unicode(self._p4dict['client'])
+        return self._p4dict['client']
 
     @property
     def root(self):
@@ -1043,17 +1072,17 @@ class Client(PerforceObject):
     @property
     def view(self):
         """A list of view specs"""
-        return [FileSpec(*v.split(' ')) for k, v in self._p4dict.iteritems() if k.startswith('view')]
+        return [FileSpec(*v.split(' ')) for k, v in six.iteritems(self._p4dict) if k.startswith('view')]
 
     @property
     def access(self):
         """The date and time last accessed"""
-        return datetime.datetime.strptime(self._p4dict['access'], "%Y/%m/%d %H:%M:%S")
+        return datetime.datetime.strptime(self._p4dict['access'], DATE_FORMAT)
 
     @property
     def update(self):
         """The date and time the client was updated"""
-        return datetime.datetime.strptime(self._p4dict['update'], "%Y/%m/%d %H:%M:%S")
+        return datetime.datetime.strptime(self._p4dict['update'], DATE_FORMAT)
 
     @property
     def stream(self):
@@ -1069,10 +1098,10 @@ class Stream(PerforceObject):
         assert stream is not None
 
         results = self._connection.run(['stream', '-o', '-v', stream])[0]
-        self._p4dict = {''.join((k[0].lower(), k[1:])): v for k, v in results.iteritems()}
+        self._p4dict = {camel_case(k): v for k, v in six.iteritems(results)}
 
     def __unicode__(self):
-        return unicode(self._p4dict['stream'])
+        return self._p4dict['stream']
 
     @property
     def description(self):
@@ -1082,14 +1111,14 @@ class Stream(PerforceObject):
     @property
     def view(self):
         """A list of view specs"""
-        return [FileSpec(*v.split(' ')) for k, v in self._p4dict.iteritems() if k.startswith('view')]
+        return [FileSpec(*v.split(' ')) for k, v in six.iteritems(self._p4dict) if k.startswith('view')]
 
     @property
     def access(self):
         """The date and time last accessed"""
-        return datetime.datetime.strptime(self._p4dict['access'], "%Y/%m/%d %H:%M:%S")
+        return datetime.datetime.strptime(self._p4dict['access'], DATE_FORMAT)
 
     @property
     def update(self):
         """The date and time the client was updated"""
-        return datetime.datetime.strptime(self._p4dict['update'], "%Y/%m/%d %H:%M:%S")
+        return datetime.datetime.strptime(self._p4dict['update'], DATE_FORMAT)

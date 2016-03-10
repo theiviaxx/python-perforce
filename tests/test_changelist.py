@@ -16,6 +16,7 @@ import string
 
 import path
 import pytest
+import six
 
 from perforce import Connection, Changelist
 from perforce import errors
@@ -25,6 +26,7 @@ from perforce import errors
 
 TO_ADD = path.path(r"C:\Users\brett\Perforce\p4_unit_tests\p4_test\to_add1.txt")
 CL = 398
+
 
 class ChangelistTests(unittest.TestCase):
     def setUp(self):
@@ -40,7 +42,7 @@ class ChangelistTests(unittest.TestCase):
         self.assertEqual('pending', cl.status)
         self.assertEqual('p4test', cl.user)
         self.assertEqual(datetime.datetime(2015, 10, 1, 23, 6, 15), cl.time)
-        self.assertEqual(str(cl), '<Changelist {}>'.format(CL))
+        self.assertEqual(repr(cl), '<Changelist {}>'.format(CL))
 
         default = self._conn.findChangelist()
 
