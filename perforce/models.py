@@ -17,6 +17,7 @@ import os
 import marshal
 import logging
 import warnings
+import re
 from collections import namedtuple
 from functools import wraps
 
@@ -62,6 +63,8 @@ ErrorLevel = namedtuple('ErrorLevel', 'EMPTY, INFO, WARN, FAILED, FATAL')(*range
 ConnectionStatus = namedtuple('ConnectionStatus', 'OK, OFFLINE, NO_AUTH, INVALID_CLIENT')(*range(4))
 #: File spec http://www.perforce.com/perforce/doc.current/manuals/cmdref/filespecs.html
 FileSpec = namedtuple('FileSpec', 'depot,client')
+
+RE_FILESPEC = re.compile('^"?(//[\w\d\_\/\.\s]+)"?\s')
 
 
 def split_ls(func):
@@ -148,15 +151,20 @@ and port')
             return
 
         p4vars = {}
-        for line in output.split('\r\n'):
+        for line in output.splitlines():
             if not line:
                 continue
-            k, v = line.split('=', 1)
+            try:
+                k, v = line.split('=', 1)
+            except ValueError:
+                continue
             p4vars[k.strip()] = v.strip().split(' (')[0]
+            if p4vars[k.strip()].startswith('(config'):
+                del p4vars[k.strip()]
 
-        self._port = self._port or p4vars.get('P4PORT', os.getenv('P4PORT'))
-        self._user = self._user or p4vars.get('P4USER', os.getenv('P4USER'))
-        self._client = self._client or p4vars.get('P4CLIENT', os.getenv('P4CLIENT'))
+        self._port = self._port or os.getenv('P4PORT', p4vars.get('P4PORT'))
+        self._user = self._user or os.getenv('P4USER', p4vars.get('P4USER'))
+        self._client = self._client or os.getenv('P4CLIENT', p4vars.get('P4CLIENT'))
 
     @property
     def client(self):
@@ -268,7 +276,7 @@ will not be supported in 0.4.0')
                         if six.PY2:
                             records.append(record)
                         else:
-                            records.append({str(k, 'utf8'): str(v) if isinstance(v, int) else str(v, 'utf8') for k, v in record.items()})
+                            records.append({str(k, 'utf8'): str(v) if isinstance(v, int) else str(v, 'utf8', errors='ignore') for k, v in record.items()})
             except EOFError:
                 pass
 
@@ -400,11 +408,13 @@ class PerforceObject(object):
         self._p4dict = {}
 
     def __getattr__(self, item):
-        if item in self.__dict__:
+        try:
             return self.__dict__[item]
-
-        if item in self._p4dict:
-            return self._p4dict[item]
+        except KeyError:
+            try:
+                return self._p4dict[item]
+            except KeyError:
+                pass
 
         raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, item))
 
@@ -1072,7 +1082,14 @@ class Client(PerforceObject):
     @property
     def view(self):
         """A list of view specs"""
-        return [FileSpec(*v.split(' ')) for k, v in six.iteritems(self._p4dict) if k.startswith('view')]
+        spec = []
+        for k, v in six.iteritems(self._p4dict):
+            if k.startswith('view'):
+                match = RE_FILESPEC.search(v)
+                if match:
+                    spec.append(FileSpec(v[:match.end() - 1], v[match.end():]))
+
+        return spec
 
     @property
     def access(self):
@@ -1111,7 +1128,14 @@ class Stream(PerforceObject):
     @property
     def view(self):
         """A list of view specs"""
-        return [FileSpec(*v.split(' ')) for k, v in six.iteritems(self._p4dict) if k.startswith('view')]
+        spec = []
+        for k, v in six.iteritems(self._p4dict):
+            if k.startswith('view'):
+                match = RE_FILESPEC.search(v)
+                if match:
+                    spec.append(FileSpec(v[:match.end() - 1], v[match.end():]))
+
+        return spec
 
     @property
     def access(self):

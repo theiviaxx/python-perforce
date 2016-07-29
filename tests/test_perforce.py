@@ -8,6 +8,7 @@ test_python-perforce
 Tests for `python-perforce` module.
 """
 
+import os
 import unittest
 import datetime
 
@@ -38,21 +39,22 @@ class MarshalTests(unittest.TestCase):
 
 # -- Connection
 def test_connection_errors():
-    with pytest.raises(errors.ConnectionError):
-        Connection(port='foo')
-
-    with pytest.raises(errors.ConnectionError):
-        Connection()
-
-    with pytest.raises(errors.ConnectionError):
-        Connection(port='127.0.0.1:1666')
-
-    with pytest.raises(errors.ConnectionError):
-        Connection(port='127.0.0.1:1666', client='p4_unit_tests')
+    with pytest.raises(errors.CommandError):
+        api.info(Connection(port='foo'))
 
     with pytest.raises(errors.CommandError):
-        c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
-        c.run(['foo'])
+        os.environ['P4PORT'] = 'foo'
+        api.info(Connection())
+        os.unsetenv('P4PORT')
+
+    with pytest.raises(errors.CommandError):
+        api.info(Connection(port='127.0.0.1:1666'))
+
+    with pytest.raises(errors.CommandError):
+        api.info(Connection(port='127.0.0.1:1666', client='p4_unit_tests'))
+
+    with pytest.raises(errors.CommandError):
+        api.info(Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test'))
 
 
 def test_global_connection():

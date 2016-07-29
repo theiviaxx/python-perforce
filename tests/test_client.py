@@ -29,8 +29,8 @@ def test_client_properties():
     assert c.stream == '//stream_test/main'
     assert isinstance(c.access, datetime.datetime)
 
-    with pytest.raises(errors.ConnectionError):
-        c = Client('p4_unit_tests')
+    # with pytest.raises(errors.ConnectionError):
+    #     c = Client('p4_unit_tests')
 
     os.chdir(r'C:\Users\brett\Perforce\p4_unit_tests_alt\p4_test')
     os.environ['P4CONFIG'] = '.p4config'
@@ -41,6 +41,7 @@ def test_client_properties():
 
     c.client = 'p4test_stream'
     assert c.client == 'p4test_stream'
+
 
 def test_stream_properties():
     con = Connection(port='127.0.0.1:1666', user='p4test')

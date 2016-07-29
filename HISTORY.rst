@@ -3,6 +3,17 @@
 History
 -------
 
+0.3.17 (2016-7-28)
+-------------------
+* Fixed bug with windows dependent line breaks Fixes #34
+* Fixed bug while parsing unicode Fixes #32
+
+0.3.16 (2016-5-6)
+-------------------
+* Fixed bug with non-unicode characters Fixes #32
+* Fixed bug with spaces in a file spec for Client and Stream Fixes #29
+* Fixed bug if any of the P4 variables were set to an empty string in a config file
+
 0.3.15 (2016-3-9)
 -------------------
 * Python 3 support
