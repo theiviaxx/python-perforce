@@ -407,10 +407,10 @@ class PerforceObject(object):
         self._connection = connection or Connection()
         self._p4dict = {}
 
-    def __getattr__(self, item):
+    def __getattribute__(self, item):
         try:
-            return self.__dict__[item]
-        except KeyError:
+            return object.__getattribute__(self, item)
+        except AttributeError:
             try:
                 return self._p4dict[item]
             except KeyError:
@@ -701,6 +701,8 @@ class Default(Changelist):
         data = self._connection.run(['opened', '-c', 'default'])
 
         for f in data:
+            if self._files is None:
+                self._files = []
             self._files.append(Revision(f, self._connection))
 
         data = self._connection.run(['change', '-o'])[0]
