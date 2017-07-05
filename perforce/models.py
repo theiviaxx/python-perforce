@@ -16,7 +16,6 @@ import traceback
 import os
 import marshal
 import logging
-import warnings
 import re
 from collections import namedtuple
 from functools import wraps
@@ -239,9 +238,7 @@ and port')
             args.append('-G')
 
         if isinstance(cmd, six.string_types):
-            warnings.warn('Connection.run() now requires a list instead of a string for the command argument.  Strings \
-will not be supported in 0.4.0')
-            cmd = cmd.split(' ')
+            raise ValueError('String commands are not supported, please use a list')
 
         args += cmd
 
@@ -331,17 +328,17 @@ will not be supported in 0.4.0')
             change = Default(self)
         else:
             if isinstance(description, six.integer_types):
-                change = Changelist(self, description)
+                change = Changelist(description, self)
             else:
                 pending = self.run(['changes', '-l', '-s', 'pending', '-c', str(self._client), '-u', self._user])
                 for cl in pending:
                     if cl['desc'].strip() == description.strip():
                         LOGGER.debug('Changelist found: {}'.format(cl['change']))
-                        change = Changelist(self, int(cl['change']))
+                        change = Changelist(int(cl['change']), self)
                         break
                 else:
                     LOGGER.debug('No changelist found, creating one')
-                    change = Changelist.create(self, description)
+                    change = Changelist.create(description, self)
                     change.client = self._client
                     change.save()
 
@@ -433,12 +430,8 @@ class Changelist(PerforceObject):
     A Changelist is a collection of files that will be submitted as a single entry with a description and
     timestamp
     """
-    def __init__(self, connection, changelist=None):
-        if isinstance(connection, Connection):
-            warnings.warn(PendingDeprecationWarning('Using a Connection object will be an optional argument in version\
-0.4.0'))
-        else:
-            changelist, connection = connection, changelist
+    def __init__(self, changelist=None, connection=None):
+        connection = connection or Connection()
 
         super(Changelist, self).__init__(connection=connection)
 
@@ -671,7 +664,7 @@ class Changelist(PerforceObject):
         return datetime.datetime.strptime(self._p4dict['date'], DATE_FORMAT)
 
     @staticmethod
-    def create(connection, description='<Created by Python>'):
+    def create(description='<Created by Python>', connection=None):
         """Creates a new changelist
 
         :param connection: Connection to use to create the changelist
@@ -680,23 +673,17 @@ class Changelist(PerforceObject):
         :type description: str
         :returns: :class:`.Changelist`
         """
-        if isinstance(connection, Connection):
-            warnings.warn(PendingDeprecationWarning('Using a Connection object will be an optional argument in version\
- 0.4.0'))
-        else:
-            description, connection = connection, description
-            connection = connection or Connection()
-
+        connection = connection or Connection()
         description = description.replace('\n', '\n\t')
         form = NEW_FORMAT.format(client=str(connection.client), description=description)
         result = connection.run(['change', '-i'], stdin=form, marshal_output=False)
 
-        return Changelist(connection, int(result.split()[1]))
+        return Changelist(int(result.split()[1]), connection)
 
 
 class Default(Changelist):
     def __init__(self, connection):
-        super(Default, self).__init__(connection, None)
+        super(Default, self).__init__(None, connection)
 
         data = self._connection.run(['opened', '-c', 'default'])
 
@@ -723,13 +710,8 @@ class Default(Changelist):
 
 class Revision(PerforceObject):
     """A Revision represents a file on perforce at a given point in it's history"""
-    def __init__(self, connection, data):
-        if isinstance(connection, Connection):
-            warnings.warn(PendingDeprecationWarning('Using a Connection object will be an optional argument in version\
-0.4.0'))
-        else:
-            # -- Backwards compatible argument order
-            data, connection = connection, data
+    def __init__(self, data, connection=None):
+        connection = connection or Connection()
 
         super(Revision, self).__init__(connection=connection)
 

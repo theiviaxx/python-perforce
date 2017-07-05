@@ -61,7 +61,7 @@ def info(connection=None):
     :returns: dict
     """
     c = connection or connect()
-    return c.run('info')[0]
+    return c.run(['info'])[0]
 
 
 def changelist(description=None, connection=None):

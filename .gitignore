@@ -47,3 +47,5 @@ docs/_build
 
 wingdbstub.py
 .idea/*
+
+\.cache/v/cache/
