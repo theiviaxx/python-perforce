@@ -19,7 +19,8 @@ requirements = [
 
 test_requirements = [
     'path.py==8.1.1',
-    'six==1.10.0'
+    'six==1.10.0',
+    'pytest==3.1.2',
 ]
 version = ''
 with open('perforce/__init__.py', 'r') as fh:

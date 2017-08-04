@@ -21,28 +21,31 @@ import six
 from perforce import Connection, Changelist
 from perforce import errors
 
-# import wingdbstub
 
-
-TO_ADD = path.path(r"C:\Users\brett\Perforce\p4_unit_tests\p4_test\to_add1.txt")
-CL = 398
+TO_ADD = path.path(r"E:\Users\brett\Perforce\p4_unit_tests\p4_test\to_add1.txt")
+CL = 23
+P4PORT = 'DESKTOP-M97HMBQ:1666'
+P4USER = 'p4test'
+P4CLIENT = 'p4_unit_tests'
 
 
 class ChangelistTests(unittest.TestCase):
     def setUp(self):
-        self._conn = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
-        pytest.deprecated_call(self._conn.findChangelist, CL)
+        self._conn = Connection(port=P4PORT, client=P4CLIENT, user=P4USER)
+        # pytest.deprecated_call(self._conn.findChangelist, CL)
 
     def test_changelist(self):
         cl = self._conn.findChangelist(CL)
         self.assertEqual(cl.description, 'DO NOT COMMIT')
-        self.assertEqual(len(cl), 1)
+        self.assertEqual(len(cl), 2)
         self.assertEqual(CL, int(cl))
-        self.assertEqual('p4_unit_tests', cl.client)
+        self.assertEqual(P4CLIENT, cl.client)
         self.assertEqual('pending', cl.status)
-        self.assertEqual('p4test', cl.user)
-        self.assertEqual(datetime.datetime(2015, 10, 1, 23, 6, 15), cl.time)
+        self.assertEqual(P4USER, cl.user)
+        self.assertEqual(datetime.datetime(2017, 7, 3, 21, 4, 32), cl.time)
         self.assertEqual(repr(cl), '<Changelist {}>'.format(CL))
+
+        assert cl[0].depotFile == '//p4_test/edit.txt'
 
         default = self._conn.findChangelist()
 
@@ -89,7 +92,7 @@ class ChangelistTests(unittest.TestCase):
         cl.submit()
 
 def test_reopen():
-    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    c = Connection(port=P4PORT, client=P4CLIENT, user=P4USER)
     rev = c.ls('//p4_test/synced.txt')[0]
 
     default = c.findChangelist()
@@ -113,7 +116,7 @@ def test_reopen():
     cl2.delete()
 
 def test_descriptions():
-    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    c = Connection(port=P4PORT, client=P4CLIENT, user=P4USER)
 
     cl = c.findChangelist('testing')
     assert cl.description == 'testing'
@@ -133,24 +136,24 @@ def test_descriptions():
     cl1.delete()
 
 
-def test_changelist_object():
-    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
-    cl = Changelist(c, 145)
-    assert len(cl) == 1
-    assert cl[0].isEdit == False
-
-    os.chdir(r'C:\Users\brett\Perforce\p4_unit_tests_alt\p4_test')
-    os.environ['P4CONFIG'] = '.p4config'
-    cl = Changelist(145)
-    assert len(cl) == 1
-    assert cl[0].isEdit == False
-    os.environ['P4CONFIG'] = ''
-
-
+# def test_changelist_object():
+#     c = Connection(port=P4PORT, client=P4CLIENT, user=P4USER)
+#     cl = Changelist(c, 145)
+#     assert len(cl) == 1
+#     assert cl[0].isEdit is False
+#
+#     os.chdir(r'E:\Users\brett\Perforce\p4_unit_tests_alt\p4_test')
+#     os.environ['P4CONFIG'] = '.p4config'
+#     cl = Changelist(145)
+#     assert len(cl) == 1
+#     assert cl[0].isEdit == False
+#     os.environ['P4CONFIG'] = ''
+#
+#
 def test_iadd():
-    c = Connection(port='127.0.0.1:1666', client='p4_unit_tests', user='p4test')
+    c = Connection(port=P4PORT, client=P4CLIENT, user=P4USER)
     cl = c.findChangelist('iadd')
     files = c.ls('//p4_test/s...', exclude_deleted=True)
     cl += files
-    assert len(cl) == 3
+    assert len(cl) == 2
     cl.delete()

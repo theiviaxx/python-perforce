@@ -404,25 +404,44 @@ class PerforceObject(object):
         self._connection = connection or Connection()
         self._p4dict = {}
 
-    def __getattribute__(self, item):
-        try:
-            return object.__getattribute__(self, item)
-        except AttributeError:
-            try:
-                return self._p4dict[item]
-            except KeyError:
-                pass
-
-        raise AttributeError("'{}' object has no attribute '{}'".format(self.__class__.__name__, item))
-
     def __str__(self):
         return self.__unicode__()
 
     def __unicode__(self):
-        return '<{}>'.format(self.__class__.__name__)
+        return u'<{}>'.format(self.__class__.__name__)
 
     def __repr__(self):
         return self.__unicode__()
+
+
+class FormObject(PerforceObject):
+    """Abstract class for objects with a form api (client, stream, changelist)"""
+    READONLY = ()
+    COMMAND = ''
+
+    def __init__(self, connection):
+        super(FormObject, self).__init__(connection)
+        self._dirty = False
+
+    def save(self):
+        """Saves the state of the changelist"""
+        if not self._dirty:
+            return
+
+        fields = []
+        formdata = dict(self._p4dict)
+        del formdata['code']
+        for key, value in six.iteritems(formdata):
+            match = re.search('\d$', key)
+            if match:
+                value = '\t{}'.format(value)
+                key = key[:match.start()]
+
+            value = value.replace('\n', '\n\t')
+            fields.append('{}:  {}'.format(key, value))
+        form = '\n'.join(fields)
+        self._connection.run([self.COMMAND, '-i'], stdin=form, marshal_output=False)
+        self._dirty = False
 
 
 class Changelist(PerforceObject):
@@ -531,7 +550,7 @@ class Changelist(PerforceObject):
             if self._p4dict.get('status') == 'pending' or self._change == 0:
                 change = self._change or 'default'
                 data = self._connection.run(['opened', '-c', str(change)])
-                self._files = [Revision(self._connection, r) for r in data]
+                self._files = [Revision(r, self._connection) for r in data]
             else:
                 data = self._connection.run(['describe', str(self._change)])[0]
                 depotfiles = []
@@ -652,6 +671,14 @@ class Changelist(PerforceObject):
     def description(self, desc):
         self._p4dict['description'] = desc.strip()
         self._dirty = True
+
+    @property
+    def status(self):
+        return self._p4dict['status']
+
+    @property
+    def user(self):
+        return self._p4dict['user']
 
     @property
     def isDirty(self):
@@ -1045,8 +1072,10 @@ class HeadRevision(object):
         return datetime.datetime.fromtimestamp(int(self._p4dict['headModTime']))
 
 
-class Client(PerforceObject):
+class Client(FormObject):
     """Represents a client(workspace) for a given connection"""
+    COMMAND = 'client'
+
     def __init__(self, client, connection=None):
         super(Client, self).__init__(connection=connection)
 
@@ -1056,12 +1085,61 @@ class Client(PerforceObject):
         self._p4dict = {camel_case(k): v for k, v in six.iteritems(results)}
 
     def __unicode__(self):
-        return self._p4dict['client']
+        return self.client
 
     @property
     def root(self):
         """Root path fo the client"""
         return path.Path(self._p4dict['root'])
+
+    @property
+    def client(self):
+        return self._p4dict['client']
+
+    @property
+    def description(self):
+        return self._p4dict['description'].strip()
+
+    @description.setter
+    def description(self, value):
+        self._p4dict['description'] = value.strip()
+        self._dirty = True
+
+    @property
+    def host(self):
+        return self._p4dict['host']
+
+    @host.setter
+    def host(self, value):
+        self._p4dict['host'] = value
+        self._dirty = True
+
+    @property
+    def lineEnd(self):
+        return self._p4dict['lineEnd']
+
+    @lineEnd.setter
+    def lineEnd(self, value):
+        self._p4dict['lineEnd'] = value
+        self._dirty = True
+
+    @property
+    def owner(self):
+        return self._p4dict['owner']
+
+    @owner.setter
+    def owner(self, value):
+        self._p4dict['owner'] = value
+        self._dirty = True
+
+    @property
+    def submitOptions(self):
+        return self._p4dict['submitOptions']
+
+    @submitOptions.setter
+    def submitOptions(self, value):
+        self._p4dict['submitOptions'] = value
+        self._dirty = True
 
     @property
     def view(self):
@@ -1088,7 +1166,9 @@ class Client(PerforceObject):
     @property
     def stream(self):
         """Which stream, if any, the client is under"""
-        return self._p4dict.get('stream')
+        stream = self._p4dict.get('stream')
+        if stream:
+            return Stream(stream, self._connection)
 
 
 class Stream(PerforceObject):
