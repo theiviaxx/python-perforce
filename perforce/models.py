@@ -142,7 +142,7 @@ and port')
             if os.name == 'nt':
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            output = subprocess.check_output(['p4', 'set'], startupinfo=startupinfo)
+            output = subprocess.check_output([self._executable, 'set'], startupinfo=startupinfo)
             if six.PY3:
                 output = str(output, 'utf8')
         except subprocess.CalledProcessError as err:
