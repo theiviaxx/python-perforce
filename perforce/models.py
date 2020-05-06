@@ -26,7 +26,7 @@ import six
 from perforce import errors
 
 
-LOGGER = logging.getLogger('Perforce')
+LOGGER = logging.getLogger(__name__)
 CHAR_LIMIT = 8000
 DATE_FORMAT = "%Y/%m/%d %H:%M:%S"
 FORMAT = """Change: {change}
