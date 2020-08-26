@@ -715,6 +715,18 @@ class Changelist(PerforceObject):
         """Creation time of this changelist"""
         return datetime.datetime.strptime(self._p4dict['date'], DATE_FORMAT)
 
+    @property
+    def accesstype(self):
+        """Access type of this changelist."""
+        return AccessType[self._p4dict['type'].upper()]
+
+    @accesstype.setter
+    def accesstype(self, new_type):
+        self._connection.run(['change', '-t', str(new_type), str(self.change)])
+        self._p4dict['type'] = str(new_type)
+        self._dirty = True
+        self.save()
+
     @staticmethod
     def create(
         description='<Created by Python>',
