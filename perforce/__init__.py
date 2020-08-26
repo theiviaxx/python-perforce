@@ -15,6 +15,6 @@ __author__ = 'Brett Dixon'
 __license__ = 'MIT'
 __copyright__ = 'Copyright 2015 Brett Dixon'
 
-from .models import Connection, Revision, Changelist, ConnectionStatus, ErrorLevel, Client, Stream
+from .models import Connection, Revision, Changelist, ConnectionStatus, ErrorLevel, Client, Stream, AccessType
 from .api import connect, edit, sync, info, changelist, open
 

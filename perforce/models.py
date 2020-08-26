@@ -19,6 +19,7 @@ import logging
 import re
 from collections import namedtuple
 from functools import wraps
+from enum import Enum
 
 import path
 import six
@@ -37,6 +38,8 @@ User:   {user}
 
 Status: {status}
 
+Type: {access_type}
+
 Description:
 \t{description}
 
@@ -50,6 +53,8 @@ Client: {client}
 
 Status: new
 
+Type: {access_type}
+
 Description:
 \t{description}
 
@@ -62,6 +67,25 @@ ErrorLevel = namedtuple('ErrorLevel', 'EMPTY, INFO, WARN, FAILED, FATAL')(*range
 ConnectionStatus = namedtuple('ConnectionStatus', 'OK, OFFLINE, NO_AUTH, INVALID_CLIENT')(*range(4))
 #: File spec http://www.perforce.com/perforce/doc.current/manuals/cmdref/filespecs.html
 FileSpec = namedtuple('FileSpec', 'depot,client')
+
+
+class AccessType(Enum):
+    """An enum type representing access options for a changelist."""
+    RESTRICTED = 'restricted'
+    PUBLIC = 'public'
+
+    def __repr__(self) -> str:
+        return {
+            AccessType.RESTRICTED: 'restricted',
+            AccessType.PUBLIC: 'public',
+        }.get(self, 'restricted')
+
+    def __str__(self) -> str:
+        return {
+            AccessType.RESTRICTED: 'restricted',
+            AccessType.PUBLIC: 'public',
+        }.get(self, 'restricted')
+
 
 RE_FILESPEC = re.compile('^"?(//[\w\d\_\/\.\s]+)"?\s')
 
@@ -533,6 +557,7 @@ class Changelist(PerforceObject):
             'client': str(self._p4dict['client']),
             'user': self._p4dict['user'],
             'status': self._p4dict['status'],
+            'access_type': self._p4dict['type'],
             'description': self._p4dict['description'].replace('\n', '\n\t'),
             'files': '\n'.join(['\t{}'.format(f.depotFile) for f in self._files])
         }
@@ -690,19 +715,41 @@ class Changelist(PerforceObject):
         """Creation time of this changelist"""
         return datetime.datetime.strptime(self._p4dict['date'], DATE_FORMAT)
 
+    @property
+    def accesstype(self):
+        """Access type of this changelist."""
+        return AccessType[self._p4dict['type'].upper()]
+
+    @accesstype.setter
+    def accesstype(self, new_type):
+        self._connection.run(['change', '-t', str(new_type), str(self.change)])
+        self._p4dict['type'] = str(new_type)
+        self._dirty = True
+        self.save()
+
     @staticmethod
-    def create(description='<Created by Python>', connection=None):
+    def create(
+        description='<Created by Python>',
+        connection=None,
+        access_type: AccessType = AccessType.RESTRICTED,
+    ):
         """Creates a new changelist
 
         :param connection: Connection to use to create the changelist
         :type connection: :class:`.Connection`
         :param description: Description for new changelist
         :type description: str
+        :param access_type: Visibility type for new changelist
+        :type access_type: AccessType
         :returns: :class:`.Changelist`
         """
         connection = connection or Connection()
         description = description.replace('\n', '\n\t')
-        form = NEW_FORMAT.format(client=str(connection.client), description=description)
+        form = NEW_FORMAT.format(
+            client=str(connection.client),
+            description=description,
+            access_type=access_type,
+        )
         result = connection.run(['change', '-i'], stdin=form, marshal_output=False)
 
         return Changelist(int(result.split()[1]), connection)
